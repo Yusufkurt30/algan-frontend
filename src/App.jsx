@@ -197,6 +197,8 @@ function App() {
     const today = new Date().toISOString().split('T')[0];
     const now = new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
     
+    // NOT: saveLog fonksiyonu zaten "varsa güncelle" (PATCH) yaptığı için,
+    // burada start verip timeOut'u null gönderince otomatik olarak eski kaydın üstüne yazar (eskisini silmiş gibi olur).
     await saveLog(currentUser.id, today, 'present', now, null);
     alert(`Çalışma başlatıldı: ${now}`);
   };
@@ -226,10 +228,9 @@ function App() {
   };
   const deleteMember = async (id) => { if(confirm("Silmek istediğine emin misin?")) { await axios.delete(`${API_URL}/users/${id}`); fetchAllData(); } };
   
-  // --- GÜNCELLENMİŞ GÜN EKLEME FONKSİYONU (DUPLICATE ENGELLEME) ---
+  // --- GÜNCELLENMİŞ GÜN EKLEME FONKSİYONU ---
   const addWorkDay = async () => { 
     if(isRangeMode) {
-        // --- TOPLU EKLEME MODU ---
         if(!formData.startDate || !formData.endDate) return alert("Başlangıç ve Bitiş tarihlerini seçiniz.");
         if(new Date(formData.startDate) > new Date(formData.endDate)) return alert("Başlangıç tarihi bitişten büyük olamaz.");
 
@@ -240,8 +241,6 @@ function App() {
 
         while(currentDate <= end) {
             const dateStr = currentDate.toISOString().split('T')[0];
-            
-            // AYNI TARİH VAR MI KONTROLÜ
             const exists = workDays.some(wd => wd.date === dateStr);
 
             if (!exists) {
@@ -255,37 +254,22 @@ function App() {
             currentDate.setDate(currentDate.getDate() + 1);
         }
 
-        if (datesToAdd.length === 0) {
-            return alert("Seçilen tarihlerin hepsi zaten takvimde var! Hiçbir şey eklenmedi.");
-        }
+        if (datesToAdd.length === 0) return alert("Seçilen tarihlerin hepsi zaten takvimde var!");
 
         try {
             await axios.post(`${API_URL}/workdays`, datesToAdd);
             let msg = `${datesToAdd.length} gün başarıyla eklendi!`;
             if (skippedCount > 0) msg += `\n(${skippedCount} gün zaten olduğu için atlandı)`;
             alert(msg);
-        } catch (error) {
-            console.error(error);
-            alert("Hata oluştu.");
-        }
+        } catch (error) { console.error(error); alert("Hata oluştu."); }
 
     } else {
-        // --- TEKLİ EKLEME MODU ---
         if(!formData.date) return alert("Tarih seç"); 
-
-        // AYNI TARİH VAR MI KONTROLÜ
         const exists = workDays.some(wd => wd.date === formData.date);
-        if (exists) {
-            return alert("Bu tarih zaten takvimde ekli! Düzenlemek için listeden 'YÖNET' diyebilirsin.");
-        }
-
+        if (exists) return alert("Bu tarih zaten takvimde ekli!");
         await axios.post(`${API_URL}/workdays`, formData); 
     }
-    
-    setModal(null); 
-    setFormData({}); 
-    setIsRangeMode(false); 
-    fetchAllData(); 
+    setModal(null); setFormData({}); setIsRangeMode(false); fetchAllData(); 
   };
 
   const deleteWorkDay = async (id) => { if(confirm("Silmek istediğine emin misin?")) { await axios.delete(`${API_URL}/workdays/${id}`); fetchAllData(); } };
@@ -314,11 +298,7 @@ function App() {
 
   const showPicker = (id) => {
       const el = document.getElementById(id);
-      if(el && el.showPicker) {
-          el.showPicker(); 
-      } else if(el) {
-          el.focus(); 
-      }
+      if(el && el.showPicker) el.showPicker(); else if(el) el.focus();
   };
 
   // --- UI RENDER ---
@@ -399,11 +379,11 @@ function App() {
                     <p style={{margin:0, color:'#64748b'}}>Atölyeye geldiğinde başlat, çıkarken bitir.</p>
                 </div>
                 
-                {!myTodayLog ? (
-                    <button className="btn-login" style={{width:'auto', padding:'12px 25px', background:'#22c55e'}} onClick={handleStartWork}>
-                        <i className="fas fa-play"></i> Çalışmayı Başlat
-                    </button>
-                ) : !myTodayLog.timeOut ? (
+                {/* GÜNCELLENEN MANTIK: 
+                   1. Eğer kayıt varsa VE çıkış yapılmamışsa (Hala içeride) -> BİTİR butonu göster.
+                   2. Diğer tüm durumlarda (Hiç kayıt yok VEYA Çıkış yapmış) -> BAŞLAT butonu göster.
+                */}
+                {myTodayLog && !myTodayLog.timeOut ? (
                     <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
                         <span style={{color:'#22c55e', fontWeight:'bold'}}>
                             <i className="fas fa-clock"></i> Giriş: {myTodayLog.timeIn}
@@ -413,9 +393,15 @@ function App() {
                         </button>
                     </div>
                 ) : (
-                    <div style={{textAlign:'right'}}>
-                        <div style={{color:'#22c55e', fontWeight:'bold'}}>Bugün Tamamlandı <i className="fas fa-check-circle"></i></div>
-                        <small style={{color:'#64748b'}}>{myTodayLog.timeIn} - {myTodayLog.timeOut}</small>
+                    <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end'}}>
+                        {myTodayLog && (
+                            <small style={{color:'#f59e0b', marginBottom:'5px', fontSize:'0.8rem'}}>
+                                <i className="fas fa-exclamation-triangle"></i> Başlatırsan önceki ({myTodayLog.timeIn}-{myTodayLog.timeOut}) silinir.
+                            </small>
+                        )}
+                        <button className="btn-login" style={{width:'auto', padding:'12px 25px', background:'#22c55e'}} onClick={handleStartWork}>
+                            <i className="fas fa-play"></i> {myTodayLog ? 'Tekrar Başlat' : 'Çalışmayı Başlat'}
+                        </button>
                     </div>
                 )}
             </div>
