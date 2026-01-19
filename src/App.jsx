@@ -179,8 +179,6 @@ function App() {
   // --- CRUD İŞLEMLERİ ---
   const saveLog = async (userId, date, status, timeIn, timeOut) => {
     try {
-      // ID'yi kesinlikle sayıya çevir veya tutarlı ol (Veritabanı için)
-      // Ancak backend zaten id ile eşleşiyor.
       const existing = logs.find(l => String(l.userId) === String(userId) && l.date === date);
       const payload = { userId, date, status, timeIn: timeIn||null, timeOut: timeOut||null };
       
@@ -190,7 +188,6 @@ function App() {
           await axios.post(`${API_URL}/logs`, payload);
       }
       
-      // Güncel veriyi çek
       const lRes = await axios.get(`${API_URL}/logs`);
       setLogs(lRes.data);
     } catch (e) { alert("Hata oluştu."); }
@@ -210,7 +207,6 @@ function App() {
     const today = new Date().toISOString().split('T')[0];
     const now = new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
     
-    // Sadece currentUser.id gönderiyoruz, başkasını etkilemez.
     await saveLog(currentUser.id, today, 'present', now, null);
     alert(`Çalışma başlatıldı: ${now}`);
   };
@@ -232,7 +228,6 @@ function App() {
   const handleAbsentToday = async () => {
     const today = new Date().toISOString().split('T')[0];
     if(confirm("Bugün çalışmaya katılamayacağını bildirmek istiyor musun?")) {
-        // Gelmedi olarak işaretle ve saatleri sil (null)
         await saveLog(currentUser.id, today, 'absent', null, null);
         alert("Bildirim yapıldı. Bugün 'GELMEDİ' olarak görüneceksin.");
     }
@@ -390,8 +385,6 @@ function App() {
                     <p style={{margin:0, color:'#64748b'}}>Atölyeye geldiğinde başlat, çıkarken bitir.</p>
                 </div>
                 
-                {/* Duruma göre butonları göster */}
-                {/* 1. Eğer ABSENT (GELMEDİ) ise: */}
                 {myTodayLog?.status === 'absent' ? (
                     <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end'}}>
                         <span style={{color:'#ef4444', fontWeight:'bold', marginBottom:'5px'}}>BUGÜN GELMEYECEĞİNİ BİLDİRDİN</span>
@@ -399,9 +392,7 @@ function App() {
                             <i className="fas fa-play"></i> Fikrini Değiştir ve Başlat
                         </button>
                     </div>
-                ) : 
-                /* 2. Eğer Giriş Yapmış ama Çıkmamışsa: */
-                (myTodayLog && !myTodayLog.timeOut) ? (
+                ) : (myTodayLog && !myTodayLog.timeOut) ? (
                     <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
                         <span style={{color:'#22c55e', fontWeight:'bold'}}>
                             <i className="fas fa-clock"></i> Giriş: {myTodayLog.timeIn}
@@ -410,9 +401,7 @@ function App() {
                             <i className="fas fa-stop"></i> Günü Bitir
                         </button>
                     </div>
-                ) : 
-                /* 3. Hiç Gelmemiş veya Gün Bitmişse: */
-                (
+                ) : (
                     <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
                         {myTodayLog && (
                             <small style={{color:'#64748b', fontSize:'0.8rem', textAlign:'right'}}>
@@ -536,13 +525,11 @@ function App() {
                                       return (
                                         <tr key={u.id}>
                                           <td>{u.name}</td>
-                                          {/* --- DÜZELTME BURADA: GELMEDİ İSE INPUT GİZLE --- */}
                                           {isAbsent ? (
                                               <td colSpan="2">
                                                   <div style={{background:'#fef2f2', color:'#ef4444', padding:'8px', borderRadius:'6px', textAlign:'center', fontWeight:'bold', border:'1px solid #fee2e2'}}>
                                                       GELMEDİ
                                                   </div>
-                                                  {/* Arka planda inputları gizliyoruz ki değerleri karışmasın */}
                                                   <input type="hidden" id={`in-${u.id}`} />
                                                   <input type="hidden" id={`out-${u.id}`} />
                                               </td>
@@ -566,18 +553,22 @@ function App() {
                                           )}
                                           
                                           <td>
-                                              {/* Check Butonu: Gelmediyse bunu göstermeye bile gerek yok, ama geri almak için buton lazım */}
                                               {!isAbsent && (
                                                   <button className="btn btn-save-sm" onClick={() => {
                                                      const tIn = document.getElementById(`in-${u.id}`).value;
                                                      const tOut = document.getElementById(`out-${u.id}`).value;
-                                                     saveLog(u.id, selectedDay.date, 'present', tIn, tOut);
+                                                     
+                                                     // DÜZELTİLEN YER: EĞER İKİSİ DE BOŞSA SİL
+                                                     if (!tIn && !tOut) {
+                                                         deleteLog(u.id, selectedDay.date);
+                                                     } else {
+                                                         saveLog(u.id, selectedDay.date, 'present', tIn, tOut);
+                                                     }
                                                   }}><i className="fas fa-check"></i></button>
                                               )}
                                               
-                                              {/* Gelmedi Butonu: Varsa sil, yoksa gelmedi yap */}
                                               <button className={`btn btn-absent ${isAbsent?'active':''}`} onClick={() => {
-                                                 if(isAbsent) deleteLog(u.id, selectedDay.date); // Silerek resetle
+                                                 if(isAbsent) deleteLog(u.id, selectedDay.date);
                                                  else saveLog(u.id, selectedDay.date, 'absent', null, null); 
                                               }}>
                                                   {isAbsent ? <i className="fas fa-undo"></i> : <i className="fas fa-user-times"></i>}
