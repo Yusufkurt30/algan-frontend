@@ -207,6 +207,7 @@ function App() {
     const today = new Date().toISOString().split('T')[0];
     const now = new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
     
+    // Sadece currentUser.id gönderiyoruz, başkasını etkilemez.
     await saveLog(currentUser.id, today, 'present', now, null);
     alert(`Çalışma başlatıldı: ${now}`);
   };
@@ -443,7 +444,8 @@ function App() {
                 <div className="stats-grid" style={{marginTop:'30px'}}>
                     <div className="stat-card" style={{background:'#f8fafc'}}> 
                         <div className="stat-icon"><i className="fas fa-user-check"></i></div> 
-                        <div><h4>Şu An İçeride</h4><p>{logs.filter(l => l.status === 'present' && !l.timeOut).length} Kişi</p></div> 
+                        {/* --- DÜZELTME BURADA: SADECE BUGÜNÜ SAY --- */}
+                        <div><h4>Şu An İçeride</h4><p>{logs.filter(l => l.date === todayDate && l.status === 'present' && !l.timeOut).length} Kişi</p></div> 
                     </div>
                     <div className="stat-card" style={{background:'#f8fafc'}}> 
                          <div className="stat-icon" style={{background:'#dcfce7', color:'#16a34a'}}><i className="fas fa-calendar-check"></i></div> 
@@ -558,7 +560,6 @@ function App() {
                                                      const tIn = document.getElementById(`in-${u.id}`).value;
                                                      const tOut = document.getElementById(`out-${u.id}`).value;
                                                      
-                                                     // DÜZELTİLEN YER: EĞER İKİSİ DE BOŞSA SİL
                                                      if (!tIn && !tOut) {
                                                          deleteLog(u.id, selectedDay.date);
                                                      } else {
