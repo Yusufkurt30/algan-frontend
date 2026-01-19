@@ -104,10 +104,8 @@ function App() {
     return workDays.filter(day => logs.some(l => l.date === day.date));
   };
 
-  // Type Safety için ID kontrolü
   const hasManagerPermission = (manager, targetUserId) => {
       if (!manager.managedIds) return false;
-      // Hem string hem number olarak kontrol et (Bug Fix)
       return manager.managedIds.some(id => String(id) === String(targetUserId));
   };
 
@@ -181,17 +179,25 @@ function App() {
   // --- CRUD İŞLEMLERİ ---
   const saveLog = async (userId, date, status, timeIn, timeOut) => {
     try {
-      const existing = logs.find(l => l.userId === userId && l.date === date);
+      // ID'yi kesinlikle sayıya çevir veya tutarlı ol (Veritabanı için)
+      // Ancak backend zaten id ile eşleşiyor.
+      const existing = logs.find(l => String(l.userId) === String(userId) && l.date === date);
       const payload = { userId, date, status, timeIn: timeIn||null, timeOut: timeOut||null };
-      if (existing) await axios.patch(`${API_URL}/logs/${existing.id}`, payload);
-      else await axios.post(`${API_URL}/logs`, payload);
+      
+      if (existing) {
+          await axios.patch(`${API_URL}/logs/${existing.id}`, payload);
+      } else {
+          await axios.post(`${API_URL}/logs`, payload);
+      }
+      
+      // Güncel veriyi çek
       const lRes = await axios.get(`${API_URL}/logs`);
       setLogs(lRes.data);
-    } catch (e) { alert("Hata"); }
+    } catch (e) { alert("Hata oluştu."); }
   };
   
   const deleteLog = async (userId, date) => {
-    const existing = logs.find(l => l.userId === userId && l.date === date);
+    const existing = logs.find(l => String(l.userId) === String(userId) && l.date === date);
     if(existing) { 
         await axios.delete(`${API_URL}/logs/${existing.id}`); 
         const lRes = await axios.get(`${API_URL}/logs`); 
@@ -204,6 +210,7 @@ function App() {
     const today = new Date().toISOString().split('T')[0];
     const now = new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
     
+    // Sadece currentUser.id gönderiyoruz, başkasını etkilemez.
     await saveLog(currentUser.id, today, 'present', now, null);
     alert(`Çalışma başlatıldı: ${now}`);
   };
@@ -221,6 +228,16 @@ function App() {
     }
   };
 
+  // --- YENİ: GELMEYECEĞİM BUTONU ---
+  const handleAbsentToday = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    if(confirm("Bugün çalışmaya katılamayacağını bildirmek istiyor musun?")) {
+        // Gelmedi olarak işaretle ve saatleri sil (null)
+        await saveLog(currentUser.id, today, 'absent', null, null);
+        alert("Bildirim yapıldı. Bugün 'GELMEDİ' olarak görüneceksin.");
+    }
+  };
+
   const addMember = async () => {
     if(!formData.name || !formData.username) return alert("Eksik bilgi");
     await axios.post(`${API_URL}/users`, { ...formData, password: '123', managedIds: [] });
@@ -233,45 +250,31 @@ function App() {
   };
   const deleteMember = async (id) => { if(confirm("Silmek istediğine emin misin?")) { await axios.delete(`${API_URL}/users/${id}`); fetchAllData(); } };
   
-  // --- GÜNCELLENMİŞ GÜN EKLEME FONKSİYONU ---
   const addWorkDay = async () => { 
     if(isRangeMode) {
-        if(!formData.startDate || !formData.endDate) return alert("Başlangıç ve Bitiş tarihlerini seçiniz.");
-        if(new Date(formData.startDate) > new Date(formData.endDate)) return alert("Başlangıç tarihi bitişten büyük olamaz.");
-
+        if(!formData.startDate || !formData.endDate) return alert("Tarihleri seçiniz.");
+        if(new Date(formData.startDate) > new Date(formData.endDate)) return alert("Tarih hatası.");
         const datesToAdd = [];
         let skippedCount = 0;
         let currentDate = new Date(formData.startDate);
         const end = new Date(formData.endDate);
-
         while(currentDate <= end) {
             const dateStr = currentDate.toISOString().split('T')[0];
             const exists = workDays.some(wd => wd.date === dateStr);
-
             if (!exists) {
-                datesToAdd.push({
-                    date: dateStr,
-                    description: formData.description || 'Genel Çalışma'
-                });
-            } else {
-                skippedCount++;
-            }
+                datesToAdd.push({ date: dateStr, description: formData.description || 'Genel Çalışma' });
+            } else { skippedCount++; }
             currentDate.setDate(currentDate.getDate() + 1);
         }
-
-        if (datesToAdd.length === 0) return alert("Seçilen tarihlerin hepsi zaten takvimde var!");
-
+        if (datesToAdd.length === 0) return alert("Bu tarihler zaten ekli!");
         try {
             await axios.post(`${API_URL}/workdays`, datesToAdd);
-            let msg = `${datesToAdd.length} gün başarıyla eklendi!`;
-            if (skippedCount > 0) msg += `\n(${skippedCount} gün zaten olduğu için atlandı)`;
-            alert(msg);
-        } catch (error) { console.error(error); alert("Hata oluştu."); }
-
+            alert(`${datesToAdd.length} gün eklendi. (${skippedCount} atlandı)`);
+        } catch (error) { alert("Hata."); }
     } else {
         if(!formData.date) return alert("Tarih seç"); 
         const exists = workDays.some(wd => wd.date === formData.date);
-        if (exists) return alert("Bu tarih zaten takvimde ekli!");
+        if (exists) return alert("Bu tarih zaten ekli!");
         await axios.post(`${API_URL}/workdays`, formData); 
     }
     setModal(null); setFormData({}); setIsRangeMode(false); fetchAllData(); 
@@ -280,23 +283,19 @@ function App() {
   const deleteWorkDay = async (id) => { if(confirm("Silmek istediğine emin misin?")) { await axios.delete(`${API_URL}/workdays/${id}`); fetchAllData(); } };
 
   const openPermissionModal = (user) => { setPermTargetUser(user); setPermSelectedIds(user.managedIds || []); setModal('permission'); };
-  
-  // Yetki verirken String'e çevirerek kaydet (Garanti olsun)
   const togglePermission = (id) => { 
       const strId = String(id);
       setPermSelectedIds(prev => {
-          // Önceki listedeki her şeyi string yapıp kontrol edelim
           const prevStr = prev.map(String);
           return prevStr.includes(strId) ? prevStr.filter(p=>p!==strId) : [...prevStr, strId];
       }); 
   };
-  
   const savePermissions = async () => { if(!permTargetUser) return; await axios.patch(`${API_URL}/users/${permTargetUser.id}`, { managedIds: permSelectedIds }); setModal(null); fetchAllData(); alert("Yetkiler kaydedildi."); };
 
   const updateProfile = async () => {
     if(!settingsForm.username) return alert("Kullanıcı adı boş olamaz.");
     const exists = users.find(u => u.username === settingsForm.username && u.id !== currentUser.id);
-    if(exists) return alert("Bu kullanıcı adı başkası tarafından kullanılıyor.");
+    if(exists) return alert("Kullanıcı adı dolu.");
     let newPassword = currentUser.password;
     if(settingsForm.password) {
         if(settingsForm.password !== settingsForm.confirm) return alert("Şifreler uyuşmuyor.");
@@ -308,13 +307,10 @@ function App() {
         setCurrentUser(updatedUser);
         localStorage.setItem('algan_user', JSON.stringify(updatedUser));
         alert("Profil güncellendi!");
-    } catch (e) { alert("Güncelleme hatası."); }
+    } catch (e) { alert("Hata."); }
   };
 
-  const showPicker = (id) => {
-      const el = document.getElementById(id);
-      if(el && el.showPicker) el.showPicker(); else if(el) el.focus();
-  };
+  const showPicker = (id) => { const el = document.getElementById(id); if(el && el.showPicker) el.showPicker(); else if(el) el.focus(); };
 
   // --- UI RENDER ---
   if (!currentUser) {
@@ -394,7 +390,18 @@ function App() {
                     <p style={{margin:0, color:'#64748b'}}>Atölyeye geldiğinde başlat, çıkarken bitir.</p>
                 </div>
                 
-                {myTodayLog && !myTodayLog.timeOut ? (
+                {/* Duruma göre butonları göster */}
+                {/* 1. Eğer ABSENT (GELMEDİ) ise: */}
+                {myTodayLog?.status === 'absent' ? (
+                    <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end'}}>
+                        <span style={{color:'#ef4444', fontWeight:'bold', marginBottom:'5px'}}>BUGÜN GELMEYECEĞİNİ BİLDİRDİN</span>
+                        <button className="btn-login" style={{width:'auto', padding:'12px 25px', background:'#22c55e'}} onClick={handleStartWork}>
+                            <i className="fas fa-play"></i> Fikrini Değiştir ve Başlat
+                        </button>
+                    </div>
+                ) : 
+                /* 2. Eğer Giriş Yapmış ama Çıkmamışsa: */
+                (myTodayLog && !myTodayLog.timeOut) ? (
                     <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
                         <span style={{color:'#22c55e', fontWeight:'bold'}}>
                             <i className="fas fa-clock"></i> Giriş: {myTodayLog.timeIn}
@@ -403,15 +410,21 @@ function App() {
                             <i className="fas fa-stop"></i> Günü Bitir
                         </button>
                     </div>
-                ) : (
-                    <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end'}}>
+                ) : 
+                /* 3. Hiç Gelmemiş veya Gün Bitmişse: */
+                (
+                    <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
                         {myTodayLog && (
-                            <small style={{color:'#f59e0b', marginBottom:'5px', fontSize:'0.8rem'}}>
-                                <i className="fas fa-exclamation-triangle"></i> Başlatırsan önceki ({myTodayLog.timeIn}-{myTodayLog.timeOut}) silinir.
+                            <small style={{color:'#64748b', fontSize:'0.8rem', textAlign:'right'}}>
+                                <i className="fas fa-info-circle"></i> Tekrar başlatırsan<br/>önceki silinir.
                             </small>
                         )}
                         <button className="btn-login" style={{width:'auto', padding:'12px 25px', background:'#22c55e'}} onClick={handleStartWork}>
                             <i className="fas fa-play"></i> {myTodayLog ? 'Tekrar Başlat' : 'Çalışmayı Başlat'}
+                        </button>
+                        
+                        <button className="btn-login" style={{width:'auto', padding:'12px 25px', background:'#94a3b8'}} onClick={handleAbsentToday}>
+                            <i className="fas fa-user-times"></i> Gelmeyeceğim
                         </button>
                     </div>
                 )}
@@ -492,7 +505,6 @@ function App() {
                      if (currentUser.role === 'admin') showAccordion = true;
                      else if (currentUser.role === 'head' && currentUser.unit === unit) showAccordion = true;
                      else if (currentUser.managedIds && currentUser.managedIds.length > 0) {
-                         // GÜNCELLENEN KISIM: ID'leri string/number hatası olmadan kontrol et
                          const managedInUnit = users.filter(u => hasManagerPermission(currentUser, u.id) && u.unit === unit);
                          if (managedInUnit.length > 0) showAccordion = true;
                      }
@@ -524,34 +536,53 @@ function App() {
                                       return (
                                         <tr key={u.id}>
                                           <td>{u.name}</td>
+                                          {/* --- DÜZELTME BURADA: GELMEDİ İSE INPUT GİZLE --- */}
+                                          {isAbsent ? (
+                                              <td colSpan="2">
+                                                  <div style={{background:'#fef2f2', color:'#ef4444', padding:'8px', borderRadius:'6px', textAlign:'center', fontWeight:'bold', border:'1px solid #fee2e2'}}>
+                                                      GELMEDİ
+                                                  </div>
+                                                  {/* Arka planda inputları gizliyoruz ki değerleri karışmasın */}
+                                                  <input type="hidden" id={`in-${u.id}`} />
+                                                  <input type="hidden" id={`out-${u.id}`} />
+                                              </td>
+                                          ) : (
+                                              <>
+                                                  <td>
+                                                      <input type="time" id={`in-${u.id}`} 
+                                                        defaultValue={log?.timeIn||""} 
+                                                        className="form-input"
+                                                        style={{width:'auto', padding:'5px'}} 
+                                                      />
+                                                  </td>
+                                                  <td>
+                                                      <input type="time" id={`out-${u.id}`} 
+                                                        defaultValue={log?.timeOut||""} 
+                                                        className="form-input"
+                                                        style={{width:'auto', padding:'5px'}} 
+                                                      />
+                                                  </td>
+                                              </>
+                                          )}
+                                          
                                           <td>
-                                              <input type={isAbsent?"text":"time"} id={`in-${u.id}`} 
-                                                defaultValue={isAbsent?"GELMEDİ":(log?.timeIn||"")} 
-                                                className={`form-input ${isAbsent?'input-absent':''}`} 
-                                                disabled={isAbsent} 
-                                                style={{width:'auto', padding:'5px'}} 
-                                              />
-                                          </td>
-                                          <td>
-                                              <input type={isAbsent?"text":"time"} id={`out-${u.id}`} 
-                                                defaultValue={isAbsent?"GELMEDİ":(log?.timeOut||"")} 
-                                                className={`form-input ${isAbsent?'input-absent':''}`} 
-                                                disabled={isAbsent} 
-                                                style={{width:'auto', padding:'5px'}} 
-                                              />
-                                          </td>
-                                          <td>
-                                              <button className="btn btn-save-sm" onClick={() => {
-                                                 const tIn = document.getElementById(`in-${u.id}`).value;
-                                                 const tOut = document.getElementById(`out-${u.id}`).value;
-                                                 if(!tIn && !tOut && log) deleteLog(u.id, selectedDay.date);
-                                                 else if(tIn && tIn !== "GELMEDİ") saveLog(u.id, selectedDay.date, 'present', tIn, tOut);
-                                              }}><i className="fas fa-check"></i></button>
+                                              {/* Check Butonu: Gelmediyse bunu göstermeye bile gerek yok, ama geri almak için buton lazım */}
+                                              {!isAbsent && (
+                                                  <button className="btn btn-save-sm" onClick={() => {
+                                                     const tIn = document.getElementById(`in-${u.id}`).value;
+                                                     const tOut = document.getElementById(`out-${u.id}`).value;
+                                                     saveLog(u.id, selectedDay.date, 'present', tIn, tOut);
+                                                  }}><i className="fas fa-check"></i></button>
+                                              )}
                                               
+                                              {/* Gelmedi Butonu: Varsa sil, yoksa gelmedi yap */}
                                               <button className={`btn btn-absent ${isAbsent?'active':''}`} onClick={() => {
-                                                 if(isAbsent) deleteLog(u.id, selectedDay.date); 
+                                                 if(isAbsent) deleteLog(u.id, selectedDay.date); // Silerek resetle
                                                  else saveLog(u.id, selectedDay.date, 'absent', null, null); 
-                                              }}><i className="fas fa-user-times"></i> GELMEDİ</button>
+                                              }}>
+                                                  {isAbsent ? <i className="fas fa-undo"></i> : <i className="fas fa-user-times"></i>}
+                                                  {isAbsent ? ' İPTAL' : ' GELMEDİ'}
+                                              </button>
                                           </td>
                                         </tr>
                                       )
