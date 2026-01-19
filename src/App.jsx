@@ -3,7 +3,7 @@ import axios from 'axios';
 import './App.css';
 
 // const API_URL = "http://localhost:3000"; // Eskisi
-const API_URL = "https://algan-backend.onrender.com"; // YENİSİ (Sonunda / işareti olmasın)
+const API_URL = "https://algan-backend.onrender.com"; // Render Linkin
 
 function App() {
   // --- STATE TANIMLARI ---
@@ -192,6 +192,30 @@ function App() {
     }
   };
 
+  // --- YENİ: KİŞİSEL BUTONLAR İÇİN FONKSİYONLAR ---
+  const handleStartWork = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
+    
+    // Eğer bugün tanımlı bir iş günü yoksa uyarı verip oluşturabiliriz ya da sadece log atarız.
+    // Şimdilik direkt log atıyoruz, sistem esnek.
+    await saveLog(currentUser.id, today, 'present', now, null);
+    alert(`Çalışma başlatıldı: ${now}`);
+  };
+
+  const handleEndWork = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
+    
+    const myLog = logs.find(l => l.userId === currentUser.id && l.date === today);
+    if(myLog) {
+        await saveLog(currentUser.id, today, 'present', myLog.timeIn, now);
+        alert(`Gün sonlandırıldı: ${now}. Eline sağlık!`);
+    } else {
+        alert("Henüz giriş yapmamışsın.");
+    }
+  };
+
   const addMember = async () => {
     if(!formData.name || !formData.username) return alert("Eksik bilgi");
     await axios.post(`${API_URL}/users`, { ...formData, password: '123', managedIds: [] });
@@ -204,43 +228,29 @@ function App() {
   };
   const deleteMember = async (id) => { if(confirm("Silmek istediğine emin misin?")) { await axios.delete(`${API_URL}/users/${id}`); fetchAllData(); } };
   
-  // --- KRİTİK: TOPLU VE TEKLİ GÜN EKLEME FONKSİYONU ---
   const addWorkDay = async () => { 
     if(isRangeMode) {
-        // --- TOPLU EKLEME MODU ---
-        if(!formData.startDate || !formData.endDate) return alert("Başlangıç ve Bitiş tarihlerini seçiniz.");
-        if(new Date(formData.startDate) > new Date(formData.endDate)) return alert("Başlangıç tarihi bitişten büyük olamaz.");
-
+        if(!formData.startDate || !formData.endDate) return alert("Tarihleri seçiniz.");
+        if(new Date(formData.startDate) > new Date(formData.endDate)) return alert("Tarih hatası.");
         const datesToAdd = [];
         let currentDate = new Date(formData.startDate);
         const end = new Date(formData.endDate);
-
         while(currentDate <= end) {
             datesToAdd.push({
-                date: currentDate.toISOString().split('T')[0], // YYYY-MM-DD
+                date: currentDate.toISOString().split('T')[0], 
                 description: formData.description || 'Genel Çalışma'
             });
             currentDate.setDate(currentDate.getDate() + 1);
         }
-
         try {
             await axios.post(`${API_URL}/workdays`, datesToAdd);
-            alert(`${datesToAdd.length} gün başarıyla eklendi!`);
-        } catch (error) {
-            console.error(error);
-            alert("Hata oluştu. Backend'in güncel olduğundan emin ol.");
-        }
-
+            alert(`${datesToAdd.length} gün eklendi!`);
+        } catch (error) { alert("Hata oluştu."); }
     } else {
-        // --- TEKLİ EKLEME MODU ---
         if(!formData.date) return alert("Tarih seç"); 
         await axios.post(`${API_URL}/workdays`, formData); 
     }
-    
-    setModal(null); 
-    setFormData({}); 
-    setIsRangeMode(false); 
-    fetchAllData(); 
+    setModal(null); setFormData({}); setIsRangeMode(false); fetchAllData(); 
   };
 
   const deleteWorkDay = async (id) => { if(confirm("Silmek istediğine emin misin?")) { await axios.delete(`${API_URL}/workdays/${id}`); fetchAllData(); } };
@@ -252,7 +262,7 @@ function App() {
   const updateProfile = async () => {
     if(!settingsForm.username) return alert("Kullanıcı adı boş olamaz.");
     const exists = users.find(u => u.username === settingsForm.username && u.id !== currentUser.id);
-    if(exists) return alert("Bu kullanıcı adı başkası tarafından kullanılıyor.");
+    if(exists) return alert("Kullanıcı adı dolu.");
     let newPassword = currentUser.password;
     if(settingsForm.password) {
         if(settingsForm.password !== settingsForm.confirm) return alert("Şifreler uyuşmuyor.");
@@ -264,17 +274,12 @@ function App() {
         setCurrentUser(updatedUser);
         localStorage.setItem('algan_user', JSON.stringify(updatedUser));
         alert("Profil güncellendi!");
-    } catch (e) { alert("Güncelleme hatası."); }
+    } catch (e) { alert("Hata."); }
   };
 
-  // --- YARDIMCI: Butonla Takvim Açma ---
   const showPicker = (id) => {
       const el = document.getElementById(id);
-      if(el && el.showPicker) {
-          el.showPicker(); // Modern tarayıcılarda takvimi açar
-      } else if(el) {
-          el.focus(); // Desteklemiyorsa odaklar
-      }
+      if(el && el.showPicker) el.showPicker(); else if(el) el.focus();
   };
 
   // --- UI RENDER ---
@@ -297,6 +302,10 @@ function App() {
   const summaryUsers = getSummaryUsers();
   const activeWorkDays = getActiveWorkDays(); 
   
+  // Bugünün logunu bul (Butonlar için)
+  const todayDate = new Date().toISOString().split('T')[0];
+  const myTodayLog = logs.find(l => l.userId === currentUser.id && l.date === todayDate);
+
   let memberPageDesc = "Kaptan olarak tüm üyeleri yönetebilirsiniz.";
   if (currentUser.role === 'head') memberPageDesc = `Sayın Başkan, sadece ${currentUser.unit} birimindeki üyeleri yönetebilirsiniz.`;
   if (currentUser.role === 'member') memberPageDesc = `Yönetim yetkiniz olan üyeler:`;
@@ -344,6 +353,36 @@ function App() {
         {activePage === 'dashboard' && (
           <div className="page active">
             <h2>Hoşgeldin, <span>{currentUser.name}</span></h2>
+            
+            {/* --- YENİ EKLENEN BUTONLAR ALANI --- */}
+            <div style={{background:'white', padding:'20px', borderRadius:'10px', marginBottom:'20px', display:'flex', gap:'15px', alignItems:'center', boxShadow:'0 2px 10px rgba(0,0,0,0.05)'}}>
+                <div style={{flex:1}}>
+                    <h3 style={{margin:'0 0 5px 0'}}>Hızlı İşlem</h3>
+                    <p style={{margin:0, color:'#64748b'}}>Atölyeye geldiğinde başlat, çıkarken bitir.</p>
+                </div>
+                
+                {!myTodayLog ? (
+                    <button className="btn-login" style={{width:'auto', padding:'12px 25px', background:'#22c55e'}} onClick={handleStartWork}>
+                        <i className="fas fa-play"></i> Çalışmayı Başlat
+                    </button>
+                ) : !myTodayLog.timeOut ? (
+                    <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
+                        <span style={{color:'#22c55e', fontWeight:'bold'}}>
+                            <i className="fas fa-clock"></i> Giriş: {myTodayLog.timeIn}
+                        </span>
+                        <button className="btn-login" style={{width:'auto', padding:'12px 25px', background:'#ef4444'}} onClick={handleEndWork}>
+                            <i className="fas fa-stop"></i> Günü Bitir
+                        </button>
+                    </div>
+                ) : (
+                    <div style={{textAlign:'right'}}>
+                        <div style={{color:'#22c55e', fontWeight:'bold'}}>Bugün Tamamlandı <i className="fas fa-check-circle"></i></div>
+                        <small style={{color:'#64748b'}}>{myTodayLog.timeIn} - {myTodayLog.timeOut}</small>
+                    </div>
+                )}
+            </div>
+            {/* ----------------------------------- */}
+
             <div className="stats-grid">
                <div className="stat-card"> <div className="stat-icon"><i className="fas fa-calendar-check"></i></div> <div><h4>Katılım Durumu</h4><p>{myStats.attended} Gün</p></div> </div>
                <div className="stat-card"> <div className="stat-icon" style={{background:'#e0f2fe',color:'#3b82f6'}}><i className="fas fa-chart-pie"></i></div> <div><h4>Katılım Oranı</h4><p>%{myStats.ratio}</p></div> </div>
@@ -654,7 +693,7 @@ function App() {
            </div>
         )}
 
-        {/* PERMISSIONS (YETKİLER) - DÜZELTİLDİ */}
+        {/* PERMISSIONS */}
         {activePage === 'permissions' && (
           <div className="page active">
             <h2>Yetki Delegasyonu</h2>
@@ -662,7 +701,6 @@ function App() {
             <table style={{width:'100%', marginTop:'20px'}}>
               <thead><tr><th>İsim</th><th>Birim</th><th>Yönettiği Kişiler</th><th>Yetki Ata</th></tr></thead>
               <tbody>
-                {/* BURADAKİ HATALI KONTROL SİLİNDİ */}
                 {users.filter(u => u.id !== currentUser.id && (currentUser.role === 'admin' || u.unit === currentUser.unit))
                   .sort((a,b)=>getRank(a)-getRank(b))
                   .map(u => (
@@ -757,21 +795,18 @@ function App() {
          </div>
       )}
 
-      {/* YENİLENEN ÇALIŞMA GÜNÜ MODALI - TAKVİM BUTONLU */}
       {modal === 'workday' && (
          <div className="modal-overlay" style={{display:'flex'}}>
             <div className="modal-box">
                <span className="close-modal" onClick={()=>setModal(null)}>&times;</span>
                <h3>Yeni Çalışma Günü</h3>
                
-               {/* Mod Değiştirme Butonu (Checkbox) */}
                <label style={{display:'flex', alignItems:'center', gap:'10px', margin:'10px 0', cursor:'pointer', fontWeight:'bold', color:'var(--accent)'}}>
                    <input type="checkbox" checked={isRangeMode} onChange={(e)=>setIsRangeMode(e.target.checked)} style={{transform:'scale(1.2)'}} />
                    Tarih Aralığı Ekle (Toplu)
                </label>
 
                {isRangeMode ? (
-                   // ARALIK MODU
                    <>
                        <label>Başlangıç Tarihi</label> 
                        <div style={{display:'flex', gap:'5px', alignItems:'center'}}>
@@ -790,7 +825,6 @@ function App() {
                        </div>
                    </>
                ) : (
-                   // TEK TARİH MODU
                    <>
                        <label>Tarih Seç</label> 
                        <div style={{display:'flex', gap:'5px', alignItems:'center'}}>
