@@ -192,13 +192,11 @@ function App() {
     }
   };
 
-  // --- YENİ: KİŞİSEL BUTONLAR İÇİN FONKSİYONLAR ---
+  // --- KİŞİSEL BUTONLAR (GİRİŞ/ÇIKIŞ) ---
   const handleStartWork = async () => {
     const today = new Date().toISOString().split('T')[0];
     const now = new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
     
-    // Eğer bugün tanımlı bir iş günü yoksa uyarı verip oluşturabiliriz ya da sadece log atarız.
-    // Şimdilik direkt log atıyoruz, sistem esnek.
     await saveLog(currentUser.id, today, 'present', now, null);
     alert(`Çalışma başlatıldı: ${now}`);
   };
@@ -228,29 +226,66 @@ function App() {
   };
   const deleteMember = async (id) => { if(confirm("Silmek istediğine emin misin?")) { await axios.delete(`${API_URL}/users/${id}`); fetchAllData(); } };
   
+  // --- GÜNCELLENMİŞ GÜN EKLEME FONKSİYONU (DUPLICATE ENGELLEME) ---
   const addWorkDay = async () => { 
     if(isRangeMode) {
-        if(!formData.startDate || !formData.endDate) return alert("Tarihleri seçiniz.");
-        if(new Date(formData.startDate) > new Date(formData.endDate)) return alert("Tarih hatası.");
+        // --- TOPLU EKLEME MODU ---
+        if(!formData.startDate || !formData.endDate) return alert("Başlangıç ve Bitiş tarihlerini seçiniz.");
+        if(new Date(formData.startDate) > new Date(formData.endDate)) return alert("Başlangıç tarihi bitişten büyük olamaz.");
+
         const datesToAdd = [];
+        let skippedCount = 0;
         let currentDate = new Date(formData.startDate);
         const end = new Date(formData.endDate);
+
         while(currentDate <= end) {
-            datesToAdd.push({
-                date: currentDate.toISOString().split('T')[0], 
-                description: formData.description || 'Genel Çalışma'
-            });
+            const dateStr = currentDate.toISOString().split('T')[0];
+            
+            // AYNI TARİH VAR MI KONTROLÜ
+            const exists = workDays.some(wd => wd.date === dateStr);
+
+            if (!exists) {
+                datesToAdd.push({
+                    date: dateStr,
+                    description: formData.description || 'Genel Çalışma'
+                });
+            } else {
+                skippedCount++;
+            }
             currentDate.setDate(currentDate.getDate() + 1);
         }
+
+        if (datesToAdd.length === 0) {
+            return alert("Seçilen tarihlerin hepsi zaten takvimde var! Hiçbir şey eklenmedi.");
+        }
+
         try {
             await axios.post(`${API_URL}/workdays`, datesToAdd);
-            alert(`${datesToAdd.length} gün eklendi!`);
-        } catch (error) { alert("Hata oluştu."); }
+            let msg = `${datesToAdd.length} gün başarıyla eklendi!`;
+            if (skippedCount > 0) msg += `\n(${skippedCount} gün zaten olduğu için atlandı)`;
+            alert(msg);
+        } catch (error) {
+            console.error(error);
+            alert("Hata oluştu.");
+        }
+
     } else {
+        // --- TEKLİ EKLEME MODU ---
         if(!formData.date) return alert("Tarih seç"); 
+
+        // AYNI TARİH VAR MI KONTROLÜ
+        const exists = workDays.some(wd => wd.date === formData.date);
+        if (exists) {
+            return alert("Bu tarih zaten takvimde ekli! Düzenlemek için listeden 'YÖNET' diyebilirsin.");
+        }
+
         await axios.post(`${API_URL}/workdays`, formData); 
     }
-    setModal(null); setFormData({}); setIsRangeMode(false); fetchAllData(); 
+    
+    setModal(null); 
+    setFormData({}); 
+    setIsRangeMode(false); 
+    fetchAllData(); 
   };
 
   const deleteWorkDay = async (id) => { if(confirm("Silmek istediğine emin misin?")) { await axios.delete(`${API_URL}/workdays/${id}`); fetchAllData(); } };
@@ -262,7 +297,7 @@ function App() {
   const updateProfile = async () => {
     if(!settingsForm.username) return alert("Kullanıcı adı boş olamaz.");
     const exists = users.find(u => u.username === settingsForm.username && u.id !== currentUser.id);
-    if(exists) return alert("Kullanıcı adı dolu.");
+    if(exists) return alert("Bu kullanıcı adı başkası tarafından kullanılıyor.");
     let newPassword = currentUser.password;
     if(settingsForm.password) {
         if(settingsForm.password !== settingsForm.confirm) return alert("Şifreler uyuşmuyor.");
@@ -274,12 +309,16 @@ function App() {
         setCurrentUser(updatedUser);
         localStorage.setItem('algan_user', JSON.stringify(updatedUser));
         alert("Profil güncellendi!");
-    } catch (e) { alert("Hata."); }
+    } catch (e) { alert("Güncelleme hatası."); }
   };
 
   const showPicker = (id) => {
       const el = document.getElementById(id);
-      if(el && el.showPicker) el.showPicker(); else if(el) el.focus();
+      if(el && el.showPicker) {
+          el.showPicker(); 
+      } else if(el) {
+          el.focus(); 
+      }
   };
 
   // --- UI RENDER ---
@@ -302,7 +341,6 @@ function App() {
   const summaryUsers = getSummaryUsers();
   const activeWorkDays = getActiveWorkDays(); 
   
-  // Bugünün logunu bul (Butonlar için)
   const todayDate = new Date().toISOString().split('T')[0];
   const myTodayLog = logs.find(l => l.userId === currentUser.id && l.date === todayDate);
 
@@ -354,7 +392,7 @@ function App() {
           <div className="page active">
             <h2>Hoşgeldin, <span>{currentUser.name}</span></h2>
             
-            {/* --- YENİ EKLENEN BUTONLAR ALANI --- */}
+            {/* KİŞİSEL GİRİŞ/ÇIKIŞ BUTONLARI */}
             <div style={{background:'white', padding:'20px', borderRadius:'10px', marginBottom:'20px', display:'flex', gap:'15px', alignItems:'center', boxShadow:'0 2px 10px rgba(0,0,0,0.05)'}}>
                 <div style={{flex:1}}>
                     <h3 style={{margin:'0 0 5px 0'}}>Hızlı İşlem</h3>
@@ -381,7 +419,6 @@ function App() {
                     </div>
                 )}
             </div>
-            {/* ----------------------------------- */}
 
             <div className="stats-grid">
                <div className="stat-card"> <div className="stat-icon"><i className="fas fa-calendar-check"></i></div> <div><h4>Katılım Durumu</h4><p>{myStats.attended} Gün</p></div> </div>
