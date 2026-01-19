@@ -467,17 +467,17 @@ function App() {
                                               />
                                           </td>
                                           <td>
-                                             <button className="btn btn-save-sm" onClick={() => {
-                                                const tIn = document.getElementById(`in-${u.id}`).value;
-                                                const tOut = document.getElementById(`out-${u.id}`).value;
-                                                if(!tIn && !tOut && log) deleteLog(u.id, selectedDay.date);
-                                                else if(tIn && tIn !== "GELMEDİ") saveLog(u.id, selectedDay.date, 'present', tIn, tOut);
-                                             }}><i className="fas fa-check"></i></button>
-                                             
-                                             <button className={`btn btn-absent ${isAbsent?'active':''}`} onClick={() => {
-                                                if(isAbsent) deleteLog(u.id, selectedDay.date); 
-                                                else saveLog(u.id, selectedDay.date, 'absent', null, null); 
-                                             }}><i className="fas fa-user-times"></i> GELMEDİ</button>
+                                              <button className="btn btn-save-sm" onClick={() => {
+                                                 const tIn = document.getElementById(`in-${u.id}`).value;
+                                                 const tOut = document.getElementById(`out-${u.id}`).value;
+                                                 if(!tIn && !tOut && log) deleteLog(u.id, selectedDay.date);
+                                                 else if(tIn && tIn !== "GELMEDİ") saveLog(u.id, selectedDay.date, 'present', tIn, tOut);
+                                              }}><i className="fas fa-check"></i></button>
+                                              
+                                              <button className={`btn btn-absent ${isAbsent?'active':''}`} onClick={() => {
+                                                 if(isAbsent) deleteLog(u.id, selectedDay.date); 
+                                                 else saveLog(u.id, selectedDay.date, 'absent', null, null); 
+                                              }}><i className="fas fa-user-times"></i> GELMEDİ</button>
                                           </td>
                                         </tr>
                                       )
@@ -654,7 +654,7 @@ function App() {
            </div>
         )}
 
-        {/* PERMISSIONS */}
+        {/* PERMISSIONS (YETKİLER) - DÜZELTİLDİ */}
         {activePage === 'permissions' && (
           <div className="page active">
             <h2>Yetki Delegasyonu</h2>
@@ -662,7 +662,8 @@ function App() {
             <table style={{width:'100%', marginTop:'20px'}}>
               <thead><tr><th>İsim</th><th>Birim</th><th>Yönettiği Kişiler</th><th>Yetki Ata</th></tr></thead>
               <tbody>
-                {users.filter(u => u.id !== permTargetUser.id && u.id !== currentUser.id && (currentUser.role === 'admin' || u.unit === currentUser.unit))
+                {/* BURADAKİ HATALI KONTROL SİLİNDİ */}
+                {users.filter(u => u.id !== currentUser.id && (currentUser.role === 'admin' || u.unit === currentUser.unit))
                   .sort((a,b)=>getRank(a)-getRank(b))
                   .map(u => (
                     <tr key={u.id}>
