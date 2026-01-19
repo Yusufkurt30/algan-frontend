@@ -48,8 +48,9 @@ function App() {
     if (currentUser) {
         fetchAllData();
         setSettingsForm({ username: currentUser.username, password: '', confirm: '' });
-        // Periyodik veri yenileme (Admin müdahalesini anında görmek için)
-        const interval = setInterval(fetchAllData, 5000); // Her 5 saniyede bir veriyi tazele
+        
+        // Admin bir şeyi değiştirirse anında yansıması için 5 saniyede bir kontrol et
+        const interval = setInterval(fetchAllData, 5000);
         return () => clearInterval(interval);
     }
   }, [currentUser]);
@@ -133,12 +134,13 @@ function App() {
     return users.filter(u => u.id === currentUser.id);
   };
 
-  // --- GRAFİK MANTIĞI ---
+  // --- GRAFİK MANTIĞI (23:59 DÜZELTMESİ İLE) ---
   const getMemberStats = (user) => {
     const activeDays = getActiveWorkDays(); 
     activeDays.sort((a,b) => new Date(a.date) - new Date(b.date));
     
     let attended = 0, totalMins = 0;
+    const todayStr = new Date().toISOString().split('T')[0];
     
     const rawData = activeDays.map(d => {
       const log = logs.find(l => String(l.userId) === String(user.id) && l.date === d.date);
@@ -150,8 +152,16 @@ function App() {
         if(log.status === 'present') {
           color = "#3b82f6"; 
           attended++;
-          if(log.timeIn && log.timeOut) {
-             mins = (new Date(`2000-01-01T${log.timeOut}`) - new Date(`2000-01-01T${log.timeIn}`)) / 60000;
+          
+          let tOut = log.timeOut;
+          // Eğer çıkış saati yoksa ama gün bugün değilse, 23:59 olarak varsay (Otomatik Bitir)
+          if (!tOut && d.date !== todayStr) {
+              tOut = "23:59"; 
+          }
+
+          if(log.timeIn && tOut) {
+             mins = (new Date(`2000-01-01T${tOut}`) - new Date(`2000-01-01T${log.timeIn}`)) / 60000;
+             if(mins < 0) mins = 0; // Hata koruması
              totalMins += mins;
           }
         } else if (log.status === 'absent') {
