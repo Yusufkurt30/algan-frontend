@@ -104,6 +104,13 @@ function App() {
     return workDays.filter(day => logs.some(l => l.date === day.date));
   };
 
+  // Type Safety için ID kontrolü
+  const hasManagerPermission = (manager, targetUserId) => {
+      if (!manager.managedIds) return false;
+      // Hem string hem number olarak kontrol et (Bug Fix)
+      return manager.managedIds.some(id => String(id) === String(targetUserId));
+  };
+
   const getVisibleUsers = () => {
     if (!currentUser) return [];
     let list = users;
@@ -111,7 +118,7 @@ function App() {
       list = users.filter(u => u.unit === currentUser.unit);
     } else if (currentUser.role === 'member') {
         if(currentUser.managedIds && currentUser.managedIds.length > 0) {
-            return users.filter(u => currentUser.managedIds.includes(u.id));
+            return users.filter(u => hasManagerPermission(currentUser, u.id));
         }
         return [];
     }
@@ -197,8 +204,6 @@ function App() {
     const today = new Date().toISOString().split('T')[0];
     const now = new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
     
-    // NOT: saveLog fonksiyonu zaten "varsa güncelle" (PATCH) yaptığı için,
-    // burada start verip timeOut'u null gönderince otomatik olarak eski kaydın üstüne yazar (eskisini silmiş gibi olur).
     await saveLog(currentUser.id, today, 'present', now, null);
     alert(`Çalışma başlatıldı: ${now}`);
   };
@@ -275,7 +280,17 @@ function App() {
   const deleteWorkDay = async (id) => { if(confirm("Silmek istediğine emin misin?")) { await axios.delete(`${API_URL}/workdays/${id}`); fetchAllData(); } };
 
   const openPermissionModal = (user) => { setPermTargetUser(user); setPermSelectedIds(user.managedIds || []); setModal('permission'); };
-  const togglePermission = (id) => { setPermSelectedIds(prev => prev.includes(id) ? prev.filter(p=>p!==id) : [...prev,id]); };
+  
+  // Yetki verirken String'e çevirerek kaydet (Garanti olsun)
+  const togglePermission = (id) => { 
+      const strId = String(id);
+      setPermSelectedIds(prev => {
+          // Önceki listedeki her şeyi string yapıp kontrol edelim
+          const prevStr = prev.map(String);
+          return prevStr.includes(strId) ? prevStr.filter(p=>p!==strId) : [...prevStr, strId];
+      }); 
+  };
+  
   const savePermissions = async () => { if(!permTargetUser) return; await axios.patch(`${API_URL}/users/${permTargetUser.id}`, { managedIds: permSelectedIds }); setModal(null); fetchAllData(); alert("Yetkiler kaydedildi."); };
 
   const updateProfile = async () => {
@@ -379,10 +394,6 @@ function App() {
                     <p style={{margin:0, color:'#64748b'}}>Atölyeye geldiğinde başlat, çıkarken bitir.</p>
                 </div>
                 
-                {/* GÜNCELLENEN MANTIK: 
-                   1. Eğer kayıt varsa VE çıkış yapılmamışsa (Hala içeride) -> BİTİR butonu göster.
-                   2. Diğer tüm durumlarda (Hiç kayıt yok VEYA Çıkış yapmış) -> BAŞLAT butonu göster.
-                */}
                 {myTodayLog && !myTodayLog.timeOut ? (
                     <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
                         <span style={{color:'#22c55e', fontWeight:'bold'}}>
@@ -481,7 +492,8 @@ function App() {
                      if (currentUser.role === 'admin') showAccordion = true;
                      else if (currentUser.role === 'head' && currentUser.unit === unit) showAccordion = true;
                      else if (currentUser.managedIds && currentUser.managedIds.length > 0) {
-                         const managedInUnit = users.filter(u => currentUser.managedIds.includes(u.id) && u.unit === unit);
+                         // GÜNCELLENEN KISIM: ID'leri string/number hatası olmadan kontrol et
+                         const managedInUnit = users.filter(u => hasManagerPermission(currentUser, u.id) && u.unit === unit);
                          if (managedInUnit.length > 0) showAccordion = true;
                      }
 
@@ -500,10 +512,10 @@ function App() {
                                  <tbody>
                                    {users.filter(u => u.unit === unit).map(u => {
                                       if (currentUser.role === 'member') {
-                                          if(!currentUser.managedIds?.includes(u.id)) return null;
+                                          if(!hasManagerPermission(currentUser, u.id)) return null;
                                       }
                                       if (currentUser.role === 'head') {
-                                          if (u.unit !== currentUser.unit && !currentUser.managedIds?.includes(u.id)) return null;
+                                          if (u.unit !== currentUser.unit && !hasManagerPermission(currentUser, u.id)) return null;
                                       }
 
                                       const log = logs.find(l => l.userId === u.id && l.date === selectedDay.date);
@@ -595,7 +607,7 @@ function App() {
                          </table>
                     ) : (
                         ['Aviyonik','Yazılım','Mekanik','Yönetim'].map(unit => {
-                            if(currentUser.role === 'head' && currentUser.unit !== unit && !users.some(u=> u.unit === unit && currentUser.managedIds?.includes(u.id))) return null;
+                            if(currentUser.role === 'head' && currentUser.unit !== unit && !users.some(u=> u.unit === unit && hasManagerPermission(currentUser, u.id))) return null;
 
                             const unitUsers = users.filter(u => u.unit === unit);
                             if(unitUsers.length === 0) return null;
@@ -689,7 +701,7 @@ function App() {
                  <tbody>
                     {visibleMembers.map(u => {
                         let canEdit = (currentUser.role === 'admin') || (currentUser.role === 'head' && u.unit === currentUser.unit && u.role === 'member');
-                        let showPass = (currentUser.role === 'admin') || (currentUser.id === u.id) || (currentUser.role === 'head' && u.unit === currentUser.unit) || (currentUser.managedIds?.includes(u.id));
+                        let showPass = (currentUser.role === 'admin') || (currentUser.id === u.id) || (currentUser.role === 'head' && u.unit === currentUser.unit) || (currentUser.managedIds && hasManagerPermission(currentUser, u.id));
                         
                         return (
                            <tr key={u.id}>
@@ -716,7 +728,7 @@ function App() {
            </div>
         )}
 
-        {/* PERMISSIONS */}
+        {/* PERMISSIONS (YETKİLER) */}
         {activePage === 'permissions' && (
           <div className="page active">
             <h2>Yetki Delegasyonu</h2>
@@ -724,7 +736,7 @@ function App() {
             <table style={{width:'100%', marginTop:'20px'}}>
               <thead><tr><th>İsim</th><th>Birim</th><th>Yönettiği Kişiler</th><th>Yetki Ata</th></tr></thead>
               <tbody>
-                {users.filter(u => u.id !== currentUser.id && (currentUser.role === 'admin' || u.unit === currentUser.unit))
+                {users.filter(u => (currentUser.role === 'admin' || u.unit === currentUser.unit))
                   .sort((a,b)=>getRank(a)-getRank(b))
                   .map(u => (
                     <tr key={u.id}>
@@ -876,17 +888,17 @@ function App() {
             <h3>{permTargetUser.name} için Yetki Tanımla</h3>
             <p style={{fontSize:'0.9em', color:'#666'}}>Seçilen kişileri bu üye yönetebilecek.</p>
             <div style={{maxHeight:'350px', overflowY:'auto', border:'1px solid #eee', padding:'10px', marginTop:'15px', borderRadius:'8px'}}>
-              {users.filter(u => u.id !== permTargetUser.id && u.id !== currentUser.id && (currentUser.role === 'admin' || u.unit === currentUser.unit))
+              {users.filter(u => u.id !== currentUser.id && (currentUser.role === 'admin' || u.unit === currentUser.unit))
                 .sort((a,b)=>getRank(a)-getRank(b))
                 .map(sub => (
                   <div key={sub.id} style={{padding:'8px', borderBottom:'1px solid #f0f0f0'}}>
                     <label style={{cursor:'pointer', display:'flex', alignItems:'center'}}>
-                      <input type="checkbox" checked={permSelectedIds.includes(sub.id)} onChange={()=>togglePermission(sub.id)} style={{marginRight:'10px', transform:'scale(1.2)'}} />
+                      <input type="checkbox" checked={permSelectedIds.includes(String(sub.id))} onChange={()=>togglePermission(sub.id)} style={{marginRight:'10px', transform:'scale(1.2)'}} />
                       <span>{sub.name} <small style={{color:'#999'}}>({sub.unit})</small></span>
                     </label>
                   </div>
                 ))}
-              {users.filter(u => u.id !== permTargetUser.id && u.id !== currentUser.id && (currentUser.role === 'admin' || u.unit === currentUser.unit)).length === 0 && (
+              {users.filter(u => u.id !== currentUser.id && (currentUser.role === 'admin' || u.unit === currentUser.unit)).length === 0 && (
                   <p style={{color:'#999'}}>Atanabilecek üye bulunamadı.</p>
               )}
             </div>
