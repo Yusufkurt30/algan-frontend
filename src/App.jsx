@@ -48,6 +48,9 @@ function App() {
     if (currentUser) {
         fetchAllData();
         setSettingsForm({ username: currentUser.username, password: '', confirm: '' });
+        // Periyodik veri yenileme (Admin müdahalesini anında görmek için)
+        const interval = setInterval(fetchAllData, 5000); // Her 5 saniyede bir veriyi tazele
+        return () => clearInterval(interval);
     }
   }, [currentUser]);
 
@@ -138,7 +141,7 @@ function App() {
     let attended = 0, totalMins = 0;
     
     const rawData = activeDays.map(d => {
-      const log = logs.find(l => l.userId === user.id && l.date === d.date);
+      const log = logs.find(l => String(l.userId) === String(user.id) && l.date === d.date);
       let mins = 0, color = "#cbd5e1"; 
       let status = 'none';
 
@@ -216,7 +219,7 @@ function App() {
     const today = new Date().toISOString().split('T')[0];
     const now = new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
     
-    const myLog = logs.find(l => l.userId === currentUser.id && l.date === today);
+    const myLog = logs.find(l => String(l.userId) === String(currentUser.id) && l.date === today);
     if(myLog) {
         await saveLog(currentUser.id, today, 'present', myLog.timeIn, now);
         alert(`Gün sonlandırıldı: ${now}. Eline sağlık!`);
@@ -329,7 +332,15 @@ function App() {
   const activeWorkDays = getActiveWorkDays(); 
   
   const todayDate = new Date().toISOString().split('T')[0];
-  const myTodayLog = logs.find(l => l.userId === currentUser.id && l.date === todayDate);
+  // BUG FIX: ID Eşleşmesi (String/Number)
+  const myTodayLog = logs.find(l => String(l.userId) === String(currentUser.id) && l.date === todayDate);
+
+  // BUG FIX: 23:59 Kontrolü (Dünden kalanlar için)
+  // Eğer giriş yapılmış ama çıkış yapılmamışsa VE tarih bugüne eşit değilse, bunu bitmiş say.
+  let isCurrentlyWorking = false;
+  if(myTodayLog && !myTodayLog.timeOut && myTodayLog.status === 'present') {
+      isCurrentlyWorking = true;
+  }
 
   let memberPageDesc = "Kaptan olarak tüm üyeleri yönetebilirsiniz.";
   if (currentUser.role === 'head') memberPageDesc = `Sayın Başkan, sadece ${currentUser.unit} birimindeki üyeleri yönetebilirsiniz.`;
@@ -393,7 +404,7 @@ function App() {
                             <i className="fas fa-play"></i> Fikrini Değiştir ve Başlat
                         </button>
                     </div>
-                ) : (myTodayLog && !myTodayLog.timeOut) ? (
+                ) : isCurrentlyWorking ? (
                     <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
                         <span style={{color:'#22c55e', fontWeight:'bold'}}>
                             <i className="fas fa-clock"></i> Giriş: {myTodayLog.timeIn}
@@ -404,7 +415,7 @@ function App() {
                     </div>
                 ) : (
                     <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
-                        {myTodayLog && (
+                        {myTodayLog && myTodayLog.timeOut && (
                             <small style={{color:'#64748b', fontSize:'0.8rem', textAlign:'right'}}>
                                 <i className="fas fa-info-circle"></i> Tekrar başlatırsan<br/>önceki silinir.
                             </small>
@@ -444,7 +455,7 @@ function App() {
                 <div className="stats-grid" style={{marginTop:'30px'}}>
                     <div className="stat-card" style={{background:'#f8fafc'}}> 
                         <div className="stat-icon"><i className="fas fa-user-check"></i></div> 
-                        {/* --- DÜZELTME BURADA: SADECE BUGÜNÜ SAY --- */}
+                        {/* BUG FIX: SADECE BUGÜN, İÇERİDE OLAN VE ÇIKIŞ YAPMAYANLARI SAY */}
                         <div><h4>Şu An İçeride</h4><p>{logs.filter(l => l.date === todayDate && l.status === 'present' && !l.timeOut).length} Kişi</p></div> 
                     </div>
                     <div className="stat-card" style={{background:'#f8fafc'}}> 
@@ -521,7 +532,7 @@ function App() {
                                           if (u.unit !== currentUser.unit && !hasManagerPermission(currentUser, u.id)) return null;
                                       }
 
-                                      const log = logs.find(l => l.userId === u.id && l.date === selectedDay.date);
+                                      const log = logs.find(l => String(l.userId) === String(u.id) && l.date === selectedDay.date);
                                       const isAbsent = log?.status === 'absent';
                                       
                                       return (
@@ -612,7 +623,7 @@ function App() {
                              <thead><tr><th>İsim</th><th>Durum</th><th>Süre</th></tr></thead>
                              <tbody>
                                 {getSummaryUsers().map(u => {
-                                    const log = logs.find(l => l.userId === u.id && l.date === summaryDate);
+                                    const log = logs.find(l => String(l.userId) === String(u.id) && l.date === summaryDate);
                                     let status = <span style={{color:'#ccc'}}>Veri Yok</span>, dur = "-";
                                     if(log) {
                                         if(log.status === 'absent') status = <span className="status-absent">GELMEDİ</span>;
@@ -647,7 +658,7 @@ function App() {
                                                 <thead><tr><th>İsim</th><th>Durum</th><th>Süre</th></tr></thead>
                                                 <tbody>
                                                     {unitUsers.map(u => {
-                                                        const log = logs.find(l => l.userId === u.id && l.date === summaryDate);
+                                                        const log = logs.find(l => String(l.userId) === String(u.id) && l.date === summaryDate);
                                                         let status = <span style={{color:'#ccc'}}>Veri Yok</span>, dur = "-";
                                                         if(log) {
                                                             if(log.status === 'absent') status = <span className="status-absent">GELMEDİ</span>;
