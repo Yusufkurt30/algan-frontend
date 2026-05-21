@@ -1,16 +1,34 @@
-# React + Vite
+# Algan Team Yönetim Sistemi — Frontend UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Algan Team Yönetim Sistemi'nin kullanıcı dostu, dinamik ve modern arayüzüdür. Tarayıcı tabanlı bir Tek Sayfa Uygulaması (SPA) olarak tasarlanmıştır.
 
-Currently, two official plugins are available:
+## 👥 Geliştirici Ekip (Takım Bilgileri)
+* **Yusuf KURT** - 22247010 (Elektrik-Elektronik Mühendisliği)
+* **Hüseyin UYGUN** - 21247076
+* **Ramdan Almjaidi** - 21247814
+* **Yiğit ÇALIŞKAN** - 22222222
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Teknolojik Altyapı (Tech Stack)
+* **Kütüphane:** React 19 (En güncel fiber mimari ve bileşen yapısı)
+* **Build Aracı:** Vite 7 (Yüksek hızlı Hot Module Replacement - HMR desteği)
+* **HTTP İstemcisi:** Axios (Backend REST API ile asenkron veri iletişimi)
+* **Tasarım/Stil:** App.css (Modüler ve responsive saf CSS tasarımı)
 
-## React Compiler
+## 🏗️ Mimari ve Durum Yönetimi (State Management)
+* **Ayrık Mimari (Decoupled):** Temiz kod ve sürdürülebilirlik ilkeleri gereği frontend kod tabanı backend'den tamamen bağımsız bir repo olarak yapılandırılmıştır.
+* **State Management:** Uygulama içi veri akışı, harici kütüphane karmaşasından uzak durularak React'ın yerleşik `useState` ve `useEffect` hook'ları ile kontrol edilmektedir.
+* **Veri Güncelleme Stratejisi:** Oturum açıldıktan sonra `Promise.all` yapısıyla kullanıcılar, çalışma günleri ve loglar 5 saniyede bir paralel olarak arka planda senkronize edilir (`Polling` stratejisi).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🖥️ Sayfalar ve Rol Tabanlı Erişim Kontrolü
+Sistem `admin`, `head` (birim lideri) ve `member` (takım üyesi) olmak üzere 3 farklı rolün yetkilerine göre dinamik olarak şekillenir:
+1. **Ana Durum (Dashboard):** Kişisel performans istatistikleri ve aktif çalışma saati grafikleri.
+2. **Gün Yönetimi (Calendar):** Yöneticiler için tekil veya toplu tarih aralığıyla çalışma günü planlama ekranı.
+3. **Günlük Özet (Summary):** Seçili tarihte hangi üyelerin projede aktif olduğunun anlık listesi.
+4. **Genel Performans (Logs):** Admin ve liderler için birim bazlı katılım analizi.
+5. **Üyeler & Rapor (Members):** Üye CRUD işlemleri ve performans çıktısı.
+6. **Yetkiler (Permissions):** `managedIds` yapısıyla belirli üyelere delegasyon / yoklama girme izni atama.
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## ⚙️ Kurulum ve Çalıştırma
+1. Bağımlılıkları yükleyin: `npm install`
+2. `src/App.jsx` içerisindeki `API_URL` değişkeninin doğru backend adresini gösterdiğinden emin olun.
+3. Geliştirme sunucusunu başlatın: `npm run dev`
