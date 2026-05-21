@@ -31,6 +31,10 @@ function App() {
   const [formData, setFormData] = useState({});
   const [settingsForm, setSettingsForm] = useState({ username: '', password: '', confirm: '' });
   
+  // --- YAPAY ZEKA STATES ---
+  const [aiReport, setAiReport] = useState(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  
   // --- MODLAR ---
   const [isRangeMode, setIsRangeMode] = useState(false);
 
@@ -238,12 +242,30 @@ function App() {
     }
   };
 
-  // --- YENİ: GELMEYECEĞİM BUTONU ---
+  // --- GELMEYECEĞİM BUTONU ---
   const handleAbsentToday = async () => {
     const today = new Date().toISOString().split('T')[0];
     if(confirm("Bugün çalışmaya katılamayacağını bildirmek istiyor musun?")) {
         await saveLog(currentUser.id, today, 'absent', null, null);
         alert("Bildirim yapıldı. Bugün 'GELMEDİ' olarak görüneceksin.");
+    }
+  };
+
+  // --- YAPAY ZEKA TETİKLEYİCİSİ ---
+  const handleAiAnalysis = async () => {
+    setIsAiLoading(true);
+    setAiReport(null);
+  
+    try {
+      const response = await axios.post(`${API_URL}/ai/analyze`, {
+        logData: logs
+      });
+      setAiReport(response.data.report);
+    } catch (error) {
+      console.error("Yapay zeka analiz hatası:", error);
+      setAiReport("Analiz sırasında bir hata oluştu. Lütfen bağlantınızı kontrol edin.");
+    } finally {
+      setIsAiLoading(false);
     }
   };
 
@@ -446,6 +468,47 @@ function App() {
                <div className="stat-card"> <div className="stat-icon" style={{background:'#e0f2fe',color:'#3b82f6'}}><i className="fas fa-chart-pie"></i></div> <div><h4>Katılım Oranı</h4><p>%{myStats.ratio}</p></div> </div>
                <div className="stat-card"> <div className="stat-icon" style={{background:'#dcfce7',color:'#16a34a'}}><i className="fas fa-clock"></i></div> <div><h4>Toplam Süre</h4><p>{myStats.hours} Saat</p></div> </div>
             </div>
+
+            {/* AI Butonu ve Raporu (Sadece Yönetici ve Liderler) */}
+            {(currentUser.role === 'admin' || currentUser.role === 'head') && (
+              <>
+                <div style={{ margin: '30px 0', textAlign: 'center' }}>
+                  <button 
+                    onClick={handleAiAnalysis} 
+                    disabled={isAiLoading}
+                    style={{
+                      backgroundColor: '#1a365d',
+                      color: 'white',
+                      padding: '12px 24px',
+                      fontSize: '16px',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: isAiLoading ? 'not-allowed' : 'pointer',
+                      boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                    }}
+                  >
+                    {isAiLoading ? '⏳ Yapay Zeka Verileri Analiz Ediyor...' : '🤖 AI Performans Analizi Çıkar'}
+                  </button>
+                </div>
+
+                {aiReport && (
+                  <div style={{
+                    backgroundColor: '#f7fafc',
+                    borderLeft: '5px solid #2b6cb0',
+                    padding: '20px',
+                    marginBottom: '20px',
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                    textAlign: 'left'
+                  }}>
+                    <h3 style={{ color: '#2d3748', marginTop: 0 }}>📊 Yönetimsel AI Raporu</h3>
+                    <p style={{ whiteSpace: 'pre-wrap', color: '#4a5568', lineHeight: '1.6', margin: 0 }}>
+                      {aiReport}
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
             
             <div className="chart-wrapper">
                <h3 style={{marginTop:0, marginBottom:'20px', paddingLeft:'10px'}}>Bireysel Çalışma Grafiği ({activeWorkDays.length} Aktif Gün)</h3>
