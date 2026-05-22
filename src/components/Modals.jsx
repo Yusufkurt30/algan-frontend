@@ -25,18 +25,18 @@ const Modals = ({
       {modal === 'member' && (
          <div className="modal-overlay" style={{display:'flex'}}>
             <div className="modal-box">
-               <span className="close-modal" onClick={()=>setModal(null)}>&times;</span>
+               <span role="button" tabIndex={0} onKeyDown={(e)=>{if(e.key==='Enter')e.currentTarget.click()}} className="close-modal" onClick={()=>setModal(null)}>&times;</span>
                <h3>Yeni Üye Ekle</h3>
-               <label>Ad Soyad</label> <input type="text" className="form-input" onChange={e=>setFormData({...formData, name:e.target.value})} />
-               <label>Kullanıcı Adı</label> <input type="text" className="form-input" onChange={e=>setFormData({...formData, username:e.target.value})} />
-               <label>Birim</label> 
+               <label>Ad Soyad <input type="text" className="form-input" onChange={e=>setFormData({...formData, name:e.target.value})} /></label>
+               <label>Kullanıcı Adı <input type="text" className="form-input" onChange={e=>setFormData({...formData, username:e.target.value})} /></label>
+               <label>Birim
                <select className="form-input" onChange={e=>setFormData({...formData, unit:e.target.value})} defaultValue="Aviyonik">
                   <option value="Aviyonik">Aviyonik</option><option value="Yazılım">Yazılım</option><option value="Mekanik">Mekanik</option><option value="Yönetim">Yönetim</option>
-               </select>
-               <label>Rol</label>
+               </select></label>
+               <label>Rol
                <select className="form-input" onChange={e=>setFormData({...formData, role:e.target.value})} defaultValue="member">
                   <option value="member">Üye</option><option value="head">Birim Başkanı</option><option value="admin">Kaptan</option>
-               </select>
+               </select></label>
                <button className="btn-login" onClick={addMember} style={{marginTop:'15px'}}>Üyeyi Kaydet</button>
             </div>
          </div>
@@ -45,18 +45,18 @@ const Modals = ({
       {modal === 'edit-member' && (
          <div className="modal-overlay" style={{display:'flex'}}>
             <div className="modal-box">
-               <span className="close-modal" onClick={()=>setModal(null)}>&times;</span>
+               <span role="button" tabIndex={0} onKeyDown={(e)=>{if(e.key==='Enter')e.currentTarget.click()}} className="close-modal" onClick={()=>setModal(null)}>&times;</span>
                <h3>Üye Düzenle</h3>
-               <label>Ad Soyad</label> <input type="text" className="form-input" value={formData.name || ''} onChange={e=>setFormData({...formData, name:e.target.value})} />
-               <label>Kullanıcı Adı</label> <input type="text" className="form-input" value={formData.username || ''} onChange={e=>setFormData({...formData, username:e.target.value})} />
-               <label>Birim</label> 
+               <label>Ad Soyad <input type="text" className="form-input" value={formData.name || ''} onChange={e=>setFormData({...formData, name:e.target.value})} /></label>
+               <label>Kullanıcı Adı <input type="text" className="form-input" value={formData.username || ''} onChange={e=>setFormData({...formData, username:e.target.value})} /></label>
+               <label>Birim 
                <select className="form-input" value={formData.unit || 'Aviyonik'} onChange={e=>setFormData({...formData, unit:e.target.value})}>
                   <option value="Aviyonik">Aviyonik</option><option value="Yazılım">Yazılım</option><option value="Mekanik">Mekanik</option><option value="Yönetim">Yönetim</option>
-               </select>
-               <label>Rol</label>
+               </select></label>
+               <label>Rol
                <select className="form-input" value={formData.role || 'member'} onChange={e=>setFormData({...formData, role:e.target.value})}>
                   <option value="member">Üye</option><option value="head">Birim Başkanı</option><option value="admin">Kaptan</option>
-               </select>
+               </select></label>
                <button className="btn-login" onClick={updateMember} style={{marginTop:'15px', background:'#f59e0b'}}>Güncelle</button>
             </div>
          </div>
@@ -65,7 +65,7 @@ const Modals = ({
       {modal === 'workday' && (
          <div className="modal-overlay" style={{display:'flex'}}>
             <div className="modal-box">
-               <span className="close-modal" onClick={()=>setModal(null)}>&times;</span>
+               <span role="button" tabIndex={0} onKeyDown={(e)=>{if(e.key==='Enter')e.currentTarget.click()}} className="close-modal" onClick={()=>setModal(null)}>&times;</span>
                <h3>Yeni Çalışma Günü</h3>
                
                <label style={{display:'flex', alignItems:'center', gap:'10px', margin:'10px 0', cursor:'pointer', fontWeight:'bold', color:'var(--accent)'}}>
@@ -116,7 +116,7 @@ const Modals = ({
       {modal === 'permission' && permTargetUser && (
         <div className="modal-overlay" style={{display:'flex'}}>
           <div className="modal-box" style={{width:'500px'}}>
-            <span className="close-modal" onClick={()=>setModal(null)}>&times;</span>
+            <span role="button" tabIndex={0} onKeyDown={(e)=>{if(e.key==='Enter')e.currentTarget.click()}} className="close-modal" onClick={()=>setModal(null)}>&times;</span>
             <h3>{permTargetUser.name} için Yetki Tanımla</h3>
             <p style={{fontSize:'0.9em', color:'#666'}}>Seçilen kişileri bu üye yönetebilecek.</p>
             <div style={{maxHeight:'350px', overflowY:'auto', border:'1px solid #eee', padding:'10px', marginTop:'15px', borderRadius:'8px'}}>

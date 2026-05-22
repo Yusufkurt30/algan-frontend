@@ -23,11 +23,11 @@ export const userService = {
     return res.data;
   },
   update: async (id, userData) => {
-    const res = await api.patch(`/users/${id}`, userData);
+    const res = await api.patch(`/users/${encodeURIComponent(id)}`, userData);
     return res.data;
   },
   delete: async (id) => {
-    const res = await api.delete(`/users/${id}`);
+    const res = await api.delete(`/users/${encodeURIComponent(id)}`);
     return res.data;
   }
 };
@@ -46,7 +46,7 @@ export const workdayService = {
     return res.data;
   },
   delete: async (id) => {
-    const res = await api.delete(`/workdays/${id}`);
+    const res = await api.delete(`/workdays/${encodeURIComponent(id)}`);
     return res.data;
   }
 };
@@ -61,11 +61,11 @@ export const logService = {
     return res.data;
   },
   update: async (id, logData) => {
-    const res = await api.patch(`/logs/${id}`, logData);
+    const res = await api.patch(`/logs/${encodeURIComponent(id)}`, logData);
     return res.data;
   },
   delete: async (id) => {
-    const res = await api.delete(`/logs/${id}`);
+    const res = await api.delete(`/logs/${encodeURIComponent(id)}`);
     return res.data;
   }
 };

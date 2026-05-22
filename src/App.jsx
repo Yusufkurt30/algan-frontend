@@ -93,8 +93,11 @@ function App() {
     if (!loginForm.username || !loginForm.password) { alert("Bilgileri giriniz."); return; }
     try {
       const loggedInUser = await authService.login(loginForm.username, loginForm.password);
-      setCurrentUser(loggedInUser);
-      localStorage.setItem('algan_user', JSON.stringify(loggedInUser));
+      if (loggedInUser) {
+          const safeUser = { id: loggedInUser.id, username: loggedInUser.username, name: loggedInUser.name, role: loggedInUser.role, unit: loggedInUser.unit, managedIds: loggedInUser.managedIds };
+          localStorage.setItem('user', JSON.stringify(safeUser));
+          setCurrentUser(safeUser);
+      }
       
       // Kullanıcı sisteme girince verileri çek
       fetchAllData();
@@ -112,7 +115,7 @@ function App() {
 
   const handleLogout = () => { 
       setCurrentUser(null); 
-      localStorage.removeItem('algan_user');
+      localStorage.removeItem('user');
       localStorage.removeItem('algan_active_page');
       setLoginForm({username:'', password:''}); 
       setActivePage('dashboard'); 
@@ -302,14 +305,12 @@ function App() {
     if(new Date(formData.startDate) > new Date(formData.endDate)) return alert("Tarih hatası.");
     const datesToAdd = [];
     let skippedCount = 0;
-    let currentDate = new Date(formData.startDate);
     const end = new Date(formData.endDate);
-    while(currentDate <= end) {
-        const dateStr = currentDate.toISOString().split('T')[0];
+    for(let d = new Date(formData.startDate); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
         const exists = workDays.some(wd => wd.date === dateStr);
         if (!exists) datesToAdd.push({ date: dateStr, description: formData.description || 'Genel Çalışma' });
         else skippedCount++;
-        currentDate.setDate(currentDate.getDate() + 1);
     }
     if (datesToAdd.length === 0) return alert("Bu tarihler zaten ekli!");
     try {
@@ -369,8 +370,9 @@ function App() {
     try {
         await userService.update(currentUser.id, { username: settingsForm.username, password: newPassword });
         const updatedUser = { ...currentUser, username: settingsForm.username, password: newPassword };
-        setCurrentUser(updatedUser);
-        localStorage.setItem('algan_user', JSON.stringify(updatedUser));
+        const safeUpdate = { id: updatedUser.id, username: updatedUser.username, name: updatedUser.name, role: updatedUser.role, unit: updatedUser.unit, managedIds: updatedUser.managedIds };
+        localStorage.setItem('user', JSON.stringify(safeUpdate));
+        setCurrentUser(safeUpdate);
         alert("Profil güncellendi!");
     } catch { alert("Hata."); }
   };

@@ -59,7 +59,7 @@ const Summary = ({
                     const isOpen = openAccordions['sum_'+unit];
                     return (
                         <div key={unit} className="accordion-item">
-                            <div className="accordion-header" onClick={()=>setOpenAccordions({...openAccordions, ['sum_'+unit]: !isOpen})}>
+                            <div role="button" tabIndex={0} onKeyDown={(e)=>{if(e.key==='Enter')e.currentTarget.click()}} className="accordion-header" onClick={()=>setOpenAccordions({...openAccordions, ['sum_'+unit]: !isOpen})}>
                                 <span>{unit}</span> <i className={`fas fa-chevron-${isOpen?'up':'down'}`}></i>
                             </div>
                             {isOpen && (

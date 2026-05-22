@@ -21,7 +21,7 @@ const Logs = ({
         const isOpen = openAccordions[unit+'_perf'];
         return (
             <div key={unit} className="accordion-item">
-              <div className="accordion-header" onClick={()=>setOpenAccordions({...openAccordions, [unit+'_perf']:!isOpen})}>
+              <div role="button" tabIndex={0} onKeyDown={(e)=>{if(e.key==='Enter')e.currentTarget.click()}} className="accordion-header" onClick={()=>setOpenAccordions({...openAccordions, [unit+'_perf']:!isOpen})}>
                   <span>{unit} Birimi</span> <i className={`fas fa-chevron-${isOpen?'up':'down'}`}></i>
               </div>
               {isOpen && (
