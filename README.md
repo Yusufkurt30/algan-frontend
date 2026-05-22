@@ -2,33 +2,49 @@
 
 Algan Team Yönetim Sistemi'nin kullanıcı dostu, dinamik ve modern arayüzüdür. Tarayıcı tabanlı bir Tek Sayfa Uygulaması (SPA) olarak tasarlanmıştır.
 
-## 👥 Geliştirici Ekip (Takım Bilgileri)
+## Proje Amacı ve Genel Bakış
+Bu proje, üniversitedeki "Yapay Zeka Destekli Yazılım Geliştirme" dersi için akademik bir ödev olarak hazırlanmıştır. Temel amacı, Algan İHA Takımı'nın çalışma günlerini, giriş/çıkış saatlerini ve devamsızlık durumlarını dijital ortamda şeffaf ve düzenli bir şekilde takip etmektir. Sistem, farklı yetki seviyelerindeki kullanıcıların (admin, head, member) rolleri çerçevesinde performans ve devamlılık analizi yapabilmesine olanak tanır.
+
+## 👥 Geliştirici Ekip
 * **Yusuf KURT** - 22247010 (Elektrik-Elektronik Mühendisliği)
 * **Hüseyin UYGUN** - 21247076
 * **Ramdan Almjaidi** - 21247814
 * **Yiğit ÇALIŞKAN** - 22247048
 
 ## 🚀 Teknolojik Altyapı (Tech Stack)
-* **Kütüphane:** React 19 (En güncel fiber mimari ve bileşen yapısı)
-* **Build Aracı:** Vite 7 (Yüksek hızlı Hot Module Replacement - HMR desteği)
-* **HTTP İstemcisi:** Axios (Backend REST API ile asenkron veri iletişimi)
-* **Tasarım/Stil:** App.css (Modüler ve responsive saf CSS tasarımı)
+* **React 19:** Kullanıcı arayüzünün (UI) bileşen tabanlı inşası, sayfa içi durum (state) yönetimi ve hızlı render işlemleri için kullanılmıştır.
+* **Vite 7:** Geliştirme sürecini hızlandırmak, anında HMR (Hot Module Replacement) sunmak ve projenin üretim (production) sürümünü en verimli şekilde derlemek (build) için kullanılmıştır.
+* **Axios (v1.13.2):** İstemci (Client) ile Sunucu (Server) arasındaki RESTful API asenkron haberleşmesini yönetmek için tercih edilmiştir.
+* **Vanilla CSS (App.css & index.css):** Herhangi bir CSS framework'üne bağımlı kalmadan, modern, esnek ve "responsive" (mobil uyumlu) bir tasarım sunmak için kullanılmıştır.
+* **Jest & React Testing Library:** Uygulamanın birim testlerini (unit test) yazarak kod güvenilirliğini ve test edilebilirliğini sağlamak için projeye entegre edilmiştir.
 
-## 🏗️ Mimari ve Durum Yönetimi (State Management)
-* **Ayrık Mimari (Decoupled):** Temiz kod ve sürdürülebilirlik ilkeleri gereği frontend kod tabanı backend'den tamamen bağımsız bir repo olarak yapılandırılmıştır.
-* **State Management:** Uygulama içi veri akışı, harici kütüphane karmaşasından uzak durularak React'ın yerleşik `useState` ve `useEffect` hook'ları ile kontrol edilmektedir.
-* **Veri Güncelleme Stratejisi:** Oturum açıldıktan sonra `Promise.all` yapısıyla kullanıcılar, çalışma günleri ve loglar 5 saniyede bir paralel olarak arka planda senkronize edilir (`Polling` stratejisi).
+## 🏗️ Mimari ve Modüller
+Frontend projemiz "Clean Code" ve "SOLID" prensipleri (özellikle Single Responsibility Principle - Tek Sorumluluk Prensibi) temel alınarak geliştirilmiştir.
+* **Bileşenler (Components):** UI parçaları (Sidebar, tablolar, formlar) tekrar kullanılabilirlik açısından küçük, yönetilebilir bileşenlere ayrılmıştır.
+* **Sayfalar (Pages):** `Dashboard`, `Calendar`, `Summary`, `Logs` ve `Settings` gibi ana görünümler kendi dosyalarında izole edilerek kodun okunabilirliği artırılmıştır.
+* **Servisler (Services):** Tüm backend API istekleri (HTTP GET, POST vb.) `src/services/api.js` veya ilgili servis katmanlarında toplanarak UI bileşenleri veri çekme mantığından arındırılmıştır.
+* **Durum Yönetimi (State Management):** Uygulama geneli durumlar React'in Hook yapısı kullanılarak prop-drilling'i engelleyecek şekilde tasarlanmıştır.
 
-## 🖥️ Sayfalar ve Rol Tabanlı Erişim Kontrolü
-Sistem `admin`, `head` (birim lideri) ve `member` (takım üyesi) olmak üzere 3 farklı rolün yetkilerine göre dinamik olarak şekillenir:
-1. **Ana Durum (Dashboard):** Kişisel performans istatistikleri ve aktif çalışma saati grafikleri.
-2. **Gün Yönetimi (Calendar):** Yöneticiler için tekil veya toplu tarih aralığıyla çalışma günü planlama ekranı.
-3. **Günlük Özet (Summary):** Seçili tarihte hangi üyelerin projede aktif olduğunun anlık listesi.
-4. **Genel Performans (Logs):** Admin ve liderler için birim bazlı katılım analizi.
-5. **Üyeler & Rapor (Members):** Üye CRUD işlemleri ve performans çıktısı.
-6. **Yetkiler (Permissions):** `managedIds` yapısıyla belirli üyelere delegasyon / yoklama girme izni atama.
+## 🤖 ZORUNLU İSTER 1: Yapay Zeka (Gemini Pro 3.1) Kullanımı
+Projenin geliştirilme, kod üretimi ve mimari kurgulama süreçlerinde **Gemini Pro 3.1** aktif bir yapay zeka asistanı olarak kullanılmıştır:
+* **Kod Üretimi ve Refactoring:** Başlangıçta tek ve büyük bir `App.jsx` dosyası (Monolith) olarak yazılan frontend kodu, Gemini Pro 3.1 yardımıyla analiz edilerek daha küçük ve sürdürülebilir sayfa/bileşen yapılarına (Clean Architecture) başarıyla dönüştürülmüştür.
+* **Hata Ayıklama (Debugging):** Geliştirme esnasında karşılaşılan React hook bağımlılık hataları, asenkron veri çekme sorunları ve CSS düzenleme zorlukları Gemini ile interaktif bir şekilde çözülmüştür.
+* **Test Yazımı:** Jest ve React Testing Library kullanılarak yazılan birim testlerin (Unit Tests) senaryolarının kurgulanmasında yapay zekanın veri üretme ve test şablonu oluşturma becerilerinden faydalanılmıştır.
 
-## ⚙️ Kurulum ve Çalıştırma
-1. Bağımlılıkları yükleyin: `npm install`
-2. `src/App.jsx` içerisindeki `API_URL` değişkeninin doğru backend adresini gösterdiğinden emin olun.
-3. Geliştirme sunucusunu başlatın: `npm run dev`
+## 📊 ZORUNLU İSTER 2: Kod Kalitesi ve SonarCloud.io Entegrasyonu
+Projenin sürdürülebilirliğini sağlamak ve "Teknik Borç" oranını akademik kriter olan **%5'in altına** düşürmek için aşağıdaki adımlar uygulanmıştır:
+* **Statik Kod Analizi:** Proje, **SonarCloud.io** platformunda analiz edilmiş, tüm "Code Smell", kod tekrarları ve güvenlik açıkları tespit edilmiştir.
+* **Kod Kalitesi:** ESLint kuralları katılaştırılarak, tespit edilen hatalar giderilmiştir. Çıkan test sonuçlarına göre gereksiz değişkenler kaldırılmış, karmaşık fonksiyonlar basitleştirilmiştir. Böylece kodun kalitesi maksimum düzeye çıkarılmış ve test edilebilirliği artırılmıştır.
+
+## ⚙️ Kurulum ve Çalıştırma Talimatları
+1. **Gereksinimler:** Bilgisayarınızda Node.js yüklü olmalıdır.
+2. Bağımlılıkları yüklemek için terminalde şu komutu çalıştırın:
+   ```bash
+   npm install
+   ```
+3. Backend sunucusunun çalıştığından emin olun (Varsayılan olarak `http://localhost:3000` portunda olmalıdır. `src/services/api.js` veya `App.jsx` içerisindeki `API_URL` değişkenini kontrol ediniz).
+4. Geliştirme sunucusunu başlatın:
+   ```bash
+   npm run dev
+   ```
+5. Tarayıcınızda terminalde belirtilen adresi (genellikle `http://localhost:5173`) açarak projeyi görüntüleyebilirsiniz.
