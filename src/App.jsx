@@ -80,17 +80,30 @@ function App() {
   const handleLogin = async () => {
     if (!loginForm.username || !loginForm.password) { alert("Bilgileri giriniz."); return; }
     try {
-      const res = await axios.get(`${API_URL}/users`);
-      const allUsers = res.data;
-      const found = allUsers.find(u => u.username === loginForm.username && u.password === loginForm.password);
-      if (found) {
-        setCurrentUser(found);
-        localStorage.setItem('algan_user', JSON.stringify(found));
-        setUsers(allUsers);
-        setSettingsForm({ username: found.username, password: '', confirm: '' });
-        fetchAllData();
-      } else { alert("Hatalı kullanıcı adı veya şifre!"); }
-    } catch (e) { alert("Sunucu hatası!"); }
+      // Eskiden tüm kullanıcıları çekiyorduk, şimdi doğrudan YENİ GÜVENLİ login uç noktasına soruyoruz
+      const res = await axios.post(`${API_URL}/users/login`, {
+        username: loginForm.username,
+        password: loginForm.password
+      });
+      
+      // Backend onay verdiyse (hata fırlatmadıysa) giriş başarılıdır
+      const loggedInUser = res.data;
+      setCurrentUser(loggedInUser);
+      localStorage.setItem('algan_user', JSON.stringify(loggedInUser));
+      
+      // Kullanıcı sisteme girince verileri çek
+      fetchAllData();
+      setSettingsForm({ username: loggedInUser.username, password: '', confirm: '' });
+      
+    } catch (error) {
+      // Eğer backend şifre yanlış derse (401 Unauthorized fırlatırsa) buraya düşeriz
+      if (error.response && error.response.status === 401) {
+        alert("Hatalı kullanıcı adı veya şifre!");
+      } else {
+        alert("Sunucu hatası veya backend henüz güncellenmedi. Lütfen biraz bekleyip tekrar deneyin.");
+        console.error("Login hatası:", error);
+      }
+    }
   };
 
   const handleLogout = () => { 
