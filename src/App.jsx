@@ -121,8 +121,14 @@ function App() {
   // --- YARDIMCI FONKSİYONLAR ---
   const getRank = (u) => {
     if(u.role === 'admin') return 1;
-    if(u.role === 'head') return u.unit === 'Aviyonik' ? 2 : u.unit === 'Yazılım' ? 3 : 4;
-    return u.unit === 'Aviyonik' ? 6 : u.unit === 'Yazılım' ? 7 : 8;
+    if(u.role === 'head') {
+        if (u.unit === 'Aviyonik') return 2;
+        if (u.unit === 'Yazılım') return 3;
+        return 4;
+    }
+    if (u.unit === 'Aviyonik') return 6;
+    if (u.unit === 'Yazılım') return 7;
+    return 8;
   };
 
   const getActiveWorkDays = () => {
@@ -156,6 +162,24 @@ function App() {
   };
 
   // --- GRAFİK MANTIĞI (23:59 DÜZELTMESİ İLE) ---
+  const calculateDailyLog = (log, d, todayStr) => {
+      let mins = 0, color = "#cbd5e1"; 
+      if (!log) return { mins, color, attended: 0 };
+      
+      if(log.status === 'present') {
+        color = "#3b82f6"; 
+        let tOut = log.timeOut || (d.date !== todayStr ? "23:59" : null);
+        if(log.timeIn && tOut) {
+           mins = Math.max(0, (new Date(`2000-01-01T${tOut}`) - new Date(`2000-01-01T${log.timeIn}`)) / 60000);
+        }
+        return { mins, color, attended: 1 };
+      } 
+      if (log.status === 'absent') {
+        color = "#ef4444"; 
+      }
+      return { mins, color, attended: 0 };
+  };
+
   const getMemberStats = (user) => {
     const activeDays = getActiveWorkDays(); 
     activeDays.sort((a,b) => new Date(a.date) - new Date(b.date));
@@ -165,39 +189,15 @@ function App() {
     
     const rawData = activeDays.map(d => {
       const log = logs.find(l => String(l.userId) === String(user.id) && l.date === d.date);
-      let mins = 0, color = "#cbd5e1"; 
-
-      if(log) {
-        if(log.status === 'present') {
-          color = "#3b82f6"; 
-          attended++;
-          
-          let tOut = log.timeOut;
-          if (!tOut && d.date !== todayStr) {
-              tOut = "23:59"; 
-          }
-
-          if(log.timeIn && tOut) {
-             mins = (new Date(`2000-01-01T${tOut}`) - new Date(`2000-01-01T${log.timeIn}`)) / 60000;
-             if(mins < 0) mins = 0; 
-             totalMins += mins;
-          }
-        } else if (log.status === 'absent') {
-             color = "#ef4444"; 
-        }
-      }
-      
-      const hoursVal = Math.floor(mins / 60); 
-      
-      return { date: d.date, hoursVal, mins, color, desc: d.description };
+      const res = calculateDailyLog(log, d, todayStr);
+      attended += res.attended;
+      totalMins += res.mins;
+      const hoursVal = Math.floor(res.mins / 60); 
+      return { date: d.date, hoursVal, mins: res.mins, color: res.color, desc: d.description };
     });
 
     const maxVal = Math.max(...rawData.map(d => d.hoursVal), 1);
-
-    const chartData = rawData.map(d => ({
-        ...d,
-        heightPct: (d.hoursVal / maxVal) * 100 
-    }));
+    const chartData = rawData.map(d => ({ ...d, heightPct: (d.hoursVal / maxVal) * 100 }));
 
     return { 
         attended: `${attended}/${activeDays.length}`, 
@@ -290,39 +290,56 @@ function App() {
     await userService.update(formData.id, formData);
     setModal(null); setFormData({}); fetchAllData(); alert("Bilgiler güncellendi.");
   };
-  const deleteMember = async (id) => { if(confirm("Silmek istediğine emin misin?")) { await userService.delete(id); fetchAllData(); } };
+  const deleteMember = async (id) => { 
+      if(confirm("Silmek istediğine emin misin?")) { 
+          await userService.delete(id); 
+          fetchAllData(); 
+      } 
+  };
   
+  const addWorkDayRange = async () => {
+    if(!formData.startDate || !formData.endDate) return alert("Tarihleri seçiniz.");
+    if(new Date(formData.startDate) > new Date(formData.endDate)) return alert("Tarih hatası.");
+    const datesToAdd = [];
+    let skippedCount = 0;
+    let currentDate = new Date(formData.startDate);
+    const end = new Date(formData.endDate);
+    while(currentDate <= end) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const exists = workDays.some(wd => wd.date === dateStr);
+        if (!exists) datesToAdd.push({ date: dateStr, description: formData.description || 'Genel Çalışma' });
+        else skippedCount++;
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+    if (datesToAdd.length === 0) return alert("Bu tarihler zaten ekli!");
+    try {
+        await workdayService.addMultiple(datesToAdd);
+        alert(`${datesToAdd.length} gün eklendi. (${skippedCount} atlandı)`);
+    } catch { alert("Hata."); }
+  };
+
+  const addWorkDaySingle = async () => {
+    if(!formData.date) return alert("Tarih seç"); 
+    const exists = workDays.some(wd => wd.date === formData.date);
+    if (exists) return alert("Bu tarih zaten ekli!");
+    await workdayService.addSingle(formData); 
+  };
+
   const addWorkDay = async () => { 
     if(isRangeMode) {
-        if(!formData.startDate || !formData.endDate) return alert("Tarihleri seçiniz.");
-        if(new Date(formData.startDate) > new Date(formData.endDate)) return alert("Tarih hatası.");
-        const datesToAdd = [];
-        let skippedCount = 0;
-        let currentDate = new Date(formData.startDate);
-        const end = new Date(formData.endDate);
-        while(currentDate <= end) {
-            const dateStr = currentDate.toISOString().split('T')[0];
-            const exists = workDays.some(wd => wd.date === dateStr);
-            if (!exists) {
-                datesToAdd.push({ date: dateStr, description: formData.description || 'Genel Çalışma' });
-            } else { skippedCount++; }
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-        if (datesToAdd.length === 0) return alert("Bu tarihler zaten ekli!");
-        try {
-            await workdayService.addMultiple(datesToAdd);
-            alert(`${datesToAdd.length} gün eklendi. (${skippedCount} atlandı)`);
-        } catch { alert("Hata."); }
+        await addWorkDayRange();
     } else {
-        if(!formData.date) return alert("Tarih seç"); 
-        const exists = workDays.some(wd => wd.date === formData.date);
-        if (exists) return alert("Bu tarih zaten ekli!");
-        await workdayService.addSingle(formData); 
+        await addWorkDaySingle();
     }
     setModal(null); setFormData({}); setIsRangeMode(false); fetchAllData(); 
   };
 
-  const deleteWorkDay = async (id) => { if(confirm("Silmek istediğine emin misin?")) { await workdayService.delete(id); fetchAllData(); } };
+  const deleteWorkDay = async (id) => { 
+      if(confirm("Silmek istediğine emin misin?")) { 
+          await workdayService.delete(id); 
+          fetchAllData(); 
+      } 
+  };
 
   const openPermissionModal = (user) => { setPermTargetUser(user); setPermSelectedIds(user.managedIds || []); setModal('permission'); };
   const togglePermission = (id) => { 
@@ -332,7 +349,13 @@ function App() {
           return prevStr.includes(strId) ? prevStr.filter(p=>p!==strId) : [...prevStr, strId];
       }); 
   };
-  const savePermissions = async () => { if(!permTargetUser) return; await userService.update(permTargetUser.id, { managedIds: permSelectedIds }); setModal(null); fetchAllData(); alert("Yetkiler kaydedildi."); };
+  const savePermissions = async () => { 
+      if(!permTargetUser) return; 
+      await userService.update(permTargetUser.id, { managedIds: permSelectedIds }); 
+      setModal(null); 
+      fetchAllData(); 
+      alert("Yetkiler kaydedildi."); 
+  };
 
   const updateProfile = async () => {
     if(!settingsForm.username) return alert("Kullanıcı adı boş olamaz.");

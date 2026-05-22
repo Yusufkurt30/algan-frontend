@@ -24,13 +24,17 @@ const Members = ({
                 let canEdit = (currentUser.role === 'admin') || (currentUser.role === 'head' && u.unit === currentUser.unit && u.role === 'member');
                 let showPass = (currentUser.role === 'admin') || (currentUser.id === u.id) || (currentUser.role === 'head' && u.unit === currentUser.unit) || (currentUser.managedIds && hasManagerPermission(currentUser, u.id));
                 
+                let roleName = 'Üye';
+                if (u.role === 'head') roleName = 'Birim Başkanı';
+                else if (u.role === 'admin') roleName = 'Kaptan';
+
                 return (
                     <tr key={u.id}>
                       <td>{u.name}</td>
                       <td>{u.username}</td>
                       <td>{showPass ? u.password : '***'}</td>
                       <td>{u.unit}</td>
-                      <td>{u.role === 'head' ? 'Birim Başkanı' : (u.role === 'admin' ? 'Kaptan' : 'Üye')}</td>
+                      <td>{roleName}</td>
                       <td>
                           {canEdit ? (
                             <>

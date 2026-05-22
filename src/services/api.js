@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-// const API_URL = "http://localhost:3000"; // Eskisi
 const API_URL = "https://algan-backend.onrender.com"; // Render Linkin
 
 const api = axios.create({

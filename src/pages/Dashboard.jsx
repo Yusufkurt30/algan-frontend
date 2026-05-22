@@ -27,38 +27,46 @@ const Dashboard = ({
               <p style={{margin:0, color:'#64748b'}}>Atölyeye geldiğinde başlat, çıkarken bitir.</p>
           </div>
           
-          {myTodayLog?.status === 'absent' ? (
-              <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end'}}>
-                  <span style={{color:'#ef4444', fontWeight:'bold', marginBottom:'5px'}}>BUGÜN GELMEYECEĞİNİ BİLDİRDİN</span>
-                  <button className="btn-login" style={{width:'auto', padding:'12px 25px', background:'#22c55e'}} onClick={handleStartWork}>
-                      <i className="fas fa-play"></i> Fikrini Değiştir ve Başlat
-                  </button>
-              </div>
-          ) : isCurrentlyWorking ? (
-              <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
-                  <span style={{color:'#22c55e', fontWeight:'bold'}}>
-                      <i className="fas fa-clock"></i> Giriş: {myTodayLog.timeIn}
-                  </span>
-                  <button className="btn-login" style={{width:'auto', padding:'12px 25px', background:'#ef4444'}} onClick={handleEndWork}>
-                      <i className="fas fa-stop"></i> Günü Bitir
-                  </button>
-              </div>
-          ) : (
-              <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
-                  {myTodayLog && myTodayLog.timeOut && (
-                      <small style={{color:'#64748b', fontSize:'0.8rem', textAlign:'right'}}>
-                          <i className="fas fa-info-circle"></i> Tekrar başlatırsan<br/>önceki silinir.
-                      </small>
-                  )}
-                  <button className="btn-login" style={{width:'auto', padding:'12px 25px', background:'#22c55e'}} onClick={handleStartWork}>
-                      <i className="fas fa-play"></i> {myTodayLog ? 'Tekrar Başlat' : 'Çalışmayı Başlat'}
-                  </button>
-                  
-                  <button className="btn-login" style={{width:'auto', padding:'12px 25px', background:'#94a3b8'}} onClick={handleAbsentToday}>
-                      <i className="fas fa-user-times"></i> Gelmeyeceğim
-                  </button>
-              </div>
-          )}
+          {(() => {
+              if (myTodayLog?.status === 'absent') {
+                  return (
+                      <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end'}}>
+                          <span style={{color:'#ef4444', fontWeight:'bold', marginBottom:'5px'}}>BUGÜN GELMEYECEĞİNİ BİLDİRDİN</span>
+                          <button className="btn-login" style={{width:'auto', padding:'12px 25px', background:'#22c55e'}} onClick={handleStartWork}>
+                              <i className="fas fa-play"></i> Fikrini Değiştir ve Başlat
+                          </button>
+                      </div>
+                  );
+              } else if (isCurrentlyWorking) {
+                  return (
+                      <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
+                          <span style={{color:'#22c55e', fontWeight:'bold'}}>
+                              <i className="fas fa-clock"></i> Giriş: {myTodayLog.timeIn}
+                          </span>
+                          <button className="btn-login" style={{width:'auto', padding:'12px 25px', background:'#ef4444'}} onClick={handleEndWork}>
+                              <i className="fas fa-stop"></i> Günü Bitir
+                          </button>
+                      </div>
+                  );
+              } else {
+                  return (
+                      <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
+                          {myTodayLog && myTodayLog.timeOut && (
+                              <small style={{color:'#64748b', fontSize:'0.8rem', textAlign:'right'}}>
+                                  <i className="fas fa-info-circle"></i> Tekrar başlatırsan<br/>önceki silinir.
+                              </small>
+                          )}
+                          <button className="btn-login" style={{width:'auto', padding:'12px 25px', background:'#22c55e'}} onClick={handleStartWork}>
+                              <i className="fas fa-play"></i> {myTodayLog ? 'Tekrar Başlat' : 'Çalışmayı Başlat'}
+                          </button>
+                          
+                          <button className="btn-login" style={{width:'auto', padding:'12px 25px', background:'#94a3b8'}} onClick={handleAbsentToday}>
+                              <i className="fas fa-user-times"></i> Gelmeyeceğim
+                          </button>
+                      </div>
+                  );
+              }
+          })()}
       </div>
 
       <div className="stats-grid">

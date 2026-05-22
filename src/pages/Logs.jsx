@@ -30,7 +30,10 @@ const Logs = ({
                         <tbody>
                           {users.filter(u => u.unit === unit).sort((a,b)=>getRank(a)-getRank(b)).map(u => {
                               const stats = getMemberStats(u);
-                              let rateColor = stats.ratio >= 80 ? 'green' : (stats.ratio < 50 ? 'red' : 'black');
+                              let rateColor = 'black';
+                              if (stats.ratio >= 80) rateColor = 'green';
+                              else if (stats.ratio < 50) rateColor = 'red';
+                              
                               return (
                                 <tr key={u.id}>
                                   <td>{u.name}</td>
