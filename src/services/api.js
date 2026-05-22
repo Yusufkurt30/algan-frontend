@@ -23,11 +23,13 @@ export const userService = {
     return res.data;
   },
   update: async (id, userData) => {
-    const res = await api.patch(`/users/${encodeURIComponent(id)}`, userData);
+    if (!/^[a-zA-Z0-9_-]+$/.test(String(id))) throw new Error("Invalid id");
+    const res = await api.patch(`/users/${id}`, userData);
     return res.data;
   },
   delete: async (id) => {
-    const res = await api.delete(`/users/${encodeURIComponent(id)}`);
+    if (!/^[a-zA-Z0-9_-]+$/.test(String(id))) throw new Error("Invalid id");
+    const res = await api.delete(`/users/${id}`);
     return res.data;
   }
 };
@@ -46,7 +48,8 @@ export const workdayService = {
     return res.data;
   },
   delete: async (id) => {
-    const res = await api.delete(`/workdays/${encodeURIComponent(id)}`);
+    if (!/^[a-zA-Z0-9_-]+$/.test(String(id))) throw new Error("Invalid id");
+    const res = await api.delete(`/workdays/${id}`);
     return res.data;
   }
 };
@@ -61,11 +64,13 @@ export const logService = {
     return res.data;
   },
   update: async (id, logData) => {
-    const res = await api.patch(`/logs/${encodeURIComponent(id)}`, logData);
+    if (!/^[a-zA-Z0-9_-]+$/.test(String(id))) throw new Error("Invalid id");
+    const res = await api.patch(`/logs/${id}`, logData);
     return res.data;
   },
   delete: async (id) => {
-    const res = await api.delete(`/logs/${encodeURIComponent(id)}`);
+    if (!/^[a-zA-Z0-9_-]+$/.test(String(id))) throw new Error("Invalid id");
+    const res = await api.delete(`/logs/${id}`);
     return res.data;
   }
 };

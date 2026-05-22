@@ -94,7 +94,9 @@ function App() {
     try {
       const loggedInUser = await authService.login(loginForm.username, loginForm.password);
       if (loggedInUser) {
-          const safeUser = { id: loggedInUser.id, username: loggedInUser.username, name: loggedInUser.name, role: loggedInUser.role, unit: loggedInUser.unit, managedIds: loggedInUser.managedIds };
+          // S8475 Fix: Validate data before saving to localStorage
+          const s = (val) => typeof val === 'string' ? val.replace(/[<>]/g, '') : val;
+          const safeUser = { id: s(loggedInUser.id), username: s(loggedInUser.username), name: s(loggedInUser.name), role: s(loggedInUser.role), unit: s(loggedInUser.unit), managedIds: loggedInUser.managedIds };
           localStorage.setItem('user', JSON.stringify(safeUser));
           setCurrentUser(safeUser);
       }
@@ -305,9 +307,9 @@ function App() {
     if(new Date(formData.startDate) > new Date(formData.endDate)) return alert("Tarih hatası.");
     const datesToAdd = [];
     let skippedCount = 0;
-    const end = new Date(formData.endDate);
-    for(let d = new Date(formData.startDate); d <= end; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().split('T')[0];
+    const end = new Date(formData.endDate).getTime();
+    for(let t = new Date(formData.startDate).getTime(); t <= end; t += 86400000) {
+        const dateStr = new Date(t).toISOString().split('T')[0];
         const exists = workDays.some(wd => wd.date === dateStr);
         if (!exists) datesToAdd.push({ date: dateStr, description: formData.description || 'Genel Çalışma' });
         else skippedCount++;
@@ -370,7 +372,8 @@ function App() {
     try {
         await userService.update(currentUser.id, { username: settingsForm.username, password: newPassword });
         const updatedUser = { ...currentUser, username: settingsForm.username, password: newPassword };
-        const safeUpdate = { id: updatedUser.id, username: updatedUser.username, name: updatedUser.name, role: updatedUser.role, unit: updatedUser.unit, managedIds: updatedUser.managedIds };
+        const s = (val) => typeof val === 'string' ? val.replace(/[<>]/g, '') : val;
+        const safeUpdate = { id: s(updatedUser.id), username: s(updatedUser.username), name: s(updatedUser.name), role: s(updatedUser.role), unit: s(updatedUser.unit), managedIds: updatedUser.managedIds };
         localStorage.setItem('user', JSON.stringify(safeUpdate));
         setCurrentUser(safeUpdate);
         alert("Profil güncellendi!");
