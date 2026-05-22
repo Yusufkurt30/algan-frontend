@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React from 'react';
 
 const Modals = ({
@@ -139,6 +140,26 @@ const Modals = ({
       )}
     </>
   );
+};
+
+Modals.propTypes = {
+  modal: PropTypes.any,
+  setModal: PropTypes.any,
+  formData: PropTypes.any,
+  setFormData: PropTypes.any,
+  addMember: PropTypes.any,
+  updateMember: PropTypes.any,
+  isRangeMode: PropTypes.any,
+  setIsRangeMode: PropTypes.any,
+  showPicker: PropTypes.any,
+  addWorkDay: PropTypes.any,
+  permTargetUser: PropTypes.any,
+  users: PropTypes.any,
+  currentUser: PropTypes.any,
+  getRank: PropTypes.any,
+  permSelectedIds: PropTypes.any,
+  togglePermission: PropTypes.any,
+  savePermissions: PropTypes.any,
 };
 
 export default Modals;

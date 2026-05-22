@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React from 'react';
 
 const Settings = ({
@@ -37,6 +38,12 @@ const Settings = ({
         </div>
     </div>
   );
+};
+
+Settings.propTypes = {
+  settingsForm: PropTypes.any,
+  setSettingsForm: PropTypes.any,
+  updateProfile: PropTypes.any,
 };
 
 export default Settings;

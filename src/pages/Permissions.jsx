@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React from 'react';
 
 const Permissions = ({
@@ -29,6 +30,13 @@ const Permissions = ({
       </table>
     </div>
   );
+};
+
+Permissions.propTypes = {
+  currentUser: PropTypes.any,
+  users: PropTypes.any,
+  getRank: PropTypes.any,
+  openPermissionModal: PropTypes.any,
 };
 
 export default Permissions;

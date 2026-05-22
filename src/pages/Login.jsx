@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React from 'react';
 
 const Login = ({ loginForm, setLoginForm, handleLogin }) => {
@@ -24,6 +25,12 @@ const Login = ({ loginForm, setLoginForm, handleLogin }) => {
       </div>
     </div>
   );
+};
+
+Login.propTypes = {
+  loginForm: PropTypes.any,
+  setLoginForm: PropTypes.any,
+  handleLogin: PropTypes.any,
 };
 
 export default Login;

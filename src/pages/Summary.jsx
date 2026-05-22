@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React from 'react';
 
 const Summary = ({
@@ -93,6 +94,19 @@ const Summary = ({
       )}
     </div>
   );
+};
+
+Summary.propTypes = {
+  summaryDate: PropTypes.any,
+  setSummaryDate: PropTypes.any,
+  activeWorkDays: PropTypes.any,
+  currentUser: PropTypes.any,
+  getSummaryUsers: PropTypes.any,
+  logs: PropTypes.any,
+  users: PropTypes.any,
+  hasManagerPermission: PropTypes.any,
+  openAccordions: PropTypes.any,
+  setOpenAccordions: PropTypes.any,
 };
 
 export default Summary;

@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React from 'react';
 
 const Members = ({
@@ -52,6 +53,16 @@ const Members = ({
       </table>
     </div>
   );
+};
+
+Members.propTypes = {
+  currentUser: PropTypes.any,
+  setFormData: PropTypes.any,
+  setModal: PropTypes.any,
+  visibleMembers: PropTypes.any,
+  hasManagerPermission: PropTypes.any,
+  deleteMember: PropTypes.any,
+  memberPageDesc: PropTypes.any,
 };
 
 export default Members;

@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React from 'react';
 
 const Dashboard = ({
@@ -144,6 +145,23 @@ const Dashboard = ({
       )}
     </div>
   );
+};
+
+Dashboard.propTypes = {
+  currentUser: PropTypes.any,
+  myTodayLog: PropTypes.any,
+  isCurrentlyWorking: PropTypes.any,
+  handleStartWork: PropTypes.any,
+  handleEndWork: PropTypes.any,
+  handleAbsentToday: PropTypes.any,
+  myStats: PropTypes.any,
+  handleAiAnalysis: PropTypes.any,
+  isAiLoading: PropTypes.any,
+  aiReport: PropTypes.any,
+  activeWorkDays: PropTypes.any,
+  logs: PropTypes.any,
+  todayDate: PropTypes.any,
+  workDays: PropTypes.any,
 };
 
 export default Dashboard;

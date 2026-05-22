@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React from 'react';
 
 const Calendar = ({
@@ -150,6 +151,24 @@ const Calendar = ({
       )}
     </div>
   );
+};
+
+Calendar.propTypes = {
+  currentUser: PropTypes.any,
+  selectedDay: PropTypes.any,
+  setSelectedDay: PropTypes.any,
+  workDays: PropTypes.any,
+  setIsRangeMode: PropTypes.any,
+  setFormData: PropTypes.any,
+  setModal: PropTypes.any,
+  deleteWorkDay: PropTypes.any,
+  openAccordions: PropTypes.any,
+  setOpenAccordions: PropTypes.any,
+  users: PropTypes.any,
+  logs: PropTypes.any,
+  deleteLog: PropTypes.any,
+  saveLog: PropTypes.any,
+  hasManagerPermission: PropTypes.any,
 };
 
 export default Calendar;

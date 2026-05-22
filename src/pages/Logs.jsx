@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React from 'react';
 
 const Logs = ({
@@ -52,6 +53,15 @@ const Logs = ({
       })}
     </div>
   );
+};
+
+Logs.propTypes = {
+  currentUser: PropTypes.any,
+  openAccordions: PropTypes.any,
+  setOpenAccordions: PropTypes.any,
+  users: PropTypes.any,
+  getRank: PropTypes.any,
+  getMemberStats: PropTypes.any,
 };
 
 export default Logs;

@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React from 'react';
 
 const Sidebar = ({ currentUser, clock, activePage, changePage, handleLogout }) => {
@@ -37,6 +38,14 @@ const Sidebar = ({ currentUser, clock, activePage, changePage, handleLogout }) =
       </div>
     </div>
   );
+};
+
+Sidebar.propTypes = {
+  currentUser: PropTypes.any,
+  clock: PropTypes.any,
+  activePage: PropTypes.any,
+  changePage: PropTypes.any,
+  handleLogout: PropTypes.any,
 };
 
 export default Sidebar;
