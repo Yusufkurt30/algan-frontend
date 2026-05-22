@@ -62,6 +62,7 @@ function App() {
   useEffect(() => {
     if (currentUser) {
         fetchAllData();
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSettingsForm({ username: currentUser.username, password: '', confirm: '' });
         
         // Admin bir şeyi değiştirirse anında yansıması için 5 saniyede bir kontrol et
@@ -70,7 +71,7 @@ function App() {
     }
   }, [currentUser]);
 
-  const fetchAllData = async () => {
+  async function fetchAllData() {
     try {
       const [uRes, wRes, lRes] = await Promise.all([
         userService.getAll(),
@@ -81,7 +82,7 @@ function App() {
       setWorkDays(wRes.sort((a,b) => new Date(a.date) - new Date(b.date)));
       setLogs(lRes);
     } catch (error) { console.error("Veri hatası:", error); }
-  };
+  }
 
   const changePage = (page) => {
       setActivePage(page);
@@ -165,10 +166,8 @@ function App() {
     const rawData = activeDays.map(d => {
       const log = logs.find(l => String(l.userId) === String(user.id) && l.date === d.date);
       let mins = 0, color = "#cbd5e1"; 
-      let status = 'none';
 
       if(log) {
-        status = log.status;
         if(log.status === 'present') {
           color = "#3b82f6"; 
           attended++;
@@ -222,7 +221,7 @@ function App() {
       
       const lRes = await logService.getAll();
       setLogs(lRes);
-    } catch (e) { alert("Hata oluştu."); }
+    } catch { alert("Hata oluştu."); }
   };
   
   const deleteLog = async (userId, date) => {
@@ -313,7 +312,7 @@ function App() {
         try {
             await workdayService.addMultiple(datesToAdd);
             alert(`${datesToAdd.length} gün eklendi. (${skippedCount} atlandı)`);
-        } catch (error) { alert("Hata."); }
+        } catch { alert("Hata."); }
     } else {
         if(!formData.date) return alert("Tarih seç"); 
         const exists = workDays.some(wd => wd.date === formData.date);
@@ -350,7 +349,7 @@ function App() {
         setCurrentUser(updatedUser);
         localStorage.setItem('algan_user', JSON.stringify(updatedUser));
         alert("Profil güncellendi!");
-    } catch (e) { alert("Hata."); }
+    } catch { alert("Hata."); }
   };
 
   const showPicker = (id) => { const el = document.getElementById(id); if(el && el.showPicker) el.showPicker(); else if(el) el.focus(); };
