@@ -25,13 +25,13 @@ Frontend projemiz "Clean Code" ve "SOLID" prensipleri (özellikle Single Respons
 * **Servisler (Services):** Tüm backend API istekleri (HTTP GET, POST vb.) `src/services/api.js` veya ilgili servis katmanlarında toplanarak UI bileşenleri veri çekme mantığından arındırılmıştır.
 * **Durum Yönetimi (State Management):** Uygulama geneli durumlar React'in Hook yapısı kullanılarak prop-drilling'i engelleyecek şekilde tasarlanmıştır.
 
-## 🤖 ZORUNLU İSTER 1: Yapay Zeka (Gemini Pro 3.1) Kullanımı
+## 🤖 Yapay Zeka (Gemini Pro 3.1) Kullanımı
 Projenin geliştirilme, kod üretimi ve mimari kurgulama süreçlerinde **Gemini Pro 3.1** aktif bir yapay zeka asistanı olarak kullanılmıştır:
 * **Kod Üretimi ve Refactoring:** Başlangıçta tek ve büyük bir `App.jsx` dosyası (Monolith) olarak yazılan frontend kodu, Gemini Pro 3.1 yardımıyla analiz edilerek daha küçük ve sürdürülebilir sayfa/bileşen yapılarına (Clean Architecture) başarıyla dönüştürülmüştür.
 * **Hata Ayıklama (Debugging):** Geliştirme esnasında karşılaşılan React hook bağımlılık hataları, asenkron veri çekme sorunları ve CSS düzenleme zorlukları Gemini ile interaktif bir şekilde çözülmüştür.
 * **Test Yazımı:** Jest ve React Testing Library kullanılarak yazılan birim testlerin (Unit Tests) senaryolarının kurgulanmasında yapay zekanın veri üretme ve test şablonu oluşturma becerilerinden faydalanılmıştır.
 
-## 📊 ZORUNLU İSTER 2: Kod Kalitesi ve SonarCloud.io Entegrasyonu
+## 📊 Kod Kalitesi ve SonarCloud.io Entegrasyonu
 Projenin sürdürülebilirliğini sağlamak ve "Teknik Borç" oranını akademik kriter olan **%5'in altına** düşürmek için aşağıdaki adımlar uygulanmıştır:
 * **Statik Kod Analizi:** Proje, **SonarCloud.io** platformunda analiz edilmiş, tüm "Code Smell", kod tekrarları ve güvenlik açıkları tespit edilmiştir.
 * **Kod Kalitesi:** ESLint kuralları katılaştırılarak, tespit edilen hatalar giderilmiştir. Çıkan test sonuçlarına göre gereksiz değişkenler kaldırılmış, karmaşık fonksiyonlar basitleştirilmiştir. Böylece kodun kalitesi maksimum düzeye çıkarılmış ve test edilebilirliği artırılmıştır.
